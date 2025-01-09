@@ -1,4 +1,5 @@
 # Begin Bennett
+from dataclasses import dataclass
 
 # End Bennett Begin Felix
 
