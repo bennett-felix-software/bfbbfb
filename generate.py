@@ -29,6 +29,7 @@ def decrement():
 
 # End Felix Begin Bennett
 
+
 @dataclass
 class Interpreter:
     tape: [int]
@@ -43,18 +44,20 @@ class Interpreter:
         for i in range(cells):
             s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
         return s
-    
+
 
 class Instruction:
     def __str__(self):
         raise Exception("not implemented")
+
     def exec(self):
         raise Exception("not implemented")
+
 
 @dataclass
 class OUT(Instruction):
     s: str
-    
+
     def __str__(self):
         res = ""
         for chr in self.s:
@@ -70,7 +73,7 @@ class OUT(Instruction):
 @dataclass
 class ADD(Instruction):
     val: int
-    
+
     def __str__(self):
         return "+" * self.val if self.val > 0 else "-" * self.val
 
@@ -81,7 +84,7 @@ class ADD(Instruction):
 @dataclass
 class SHF(Instruction):
     off: int
-    
+
     def __str__(self):
         return ">" * self.off if self.off > 0 else "<" * self.off
 
@@ -93,7 +96,7 @@ class SHF(Instruction):
 class MOV(Instruction):
     src: int
     dest: int
-    
+
     def __str__(self):
         to_src = SHF(self.src)
         to_dest = SHF(self.dest - self.src)
@@ -106,11 +109,12 @@ class MOV(Instruction):
         interp.tape[interp.dp + self.dest] += interp.tape[interp.dp + self.src]
         interp.tape[interp.dp + self.src] = 0
 
+
 @dataclass
 class COPY(Instruction):
     tmp: int
     dest: int
-    
+
     def __str__(self):
         to_tmp = SHF(self.tmp)
         to_dest = SHF(self.dest - self.tmp)
@@ -126,7 +130,7 @@ class COPY(Instruction):
 @dataclass
 class LOOP(Instruction):
     insts: list[Instruction]
-    
+
     def __str__(self):
         return "[" + "".join(map(str, self.inst)) + "]"
 
@@ -134,7 +138,6 @@ class LOOP(Instruction):
         while interp.dp:
             for i in self.insts:
                 i.exec(interp)
-        
 
 
 if __name__ == "__main__":
@@ -143,5 +146,3 @@ if __name__ == "__main__":
     ADD(69).exec(i)
     MOV(0, 1).exec(i)
     print(i.disp(10))
-
-
