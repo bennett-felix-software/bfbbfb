@@ -29,6 +29,22 @@ def decrement():
 
 # End Felix Begin Bennett
 
+@dataclass
+class Interpreter:
+    tape: [int]
+    dp: int
+
+    def __init__(self):
+        self.tape = [0 for _ in range(30000)]
+        self.dp = 0
+
+    def disp(self, cells: int):
+        s = ""
+        for i in range(cells):
+            s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
+        return s
+    
+
 class Instruction:
     def __str__(self):
         raise Exception("not implemented")
@@ -47,8 +63,8 @@ class OUT(Instruction):
 
         return res
 
-    def exec(tape, dp):
-        ...
+    def exec(self, interp: Interpreter):
+        print(self.s)
 
 
 @dataclass
@@ -58,8 +74,8 @@ class ADD(Instruction):
     def __str__(self):
         return "+" * self.val if self.val > 0 else "-" * self.val
 
-    def exec(tape, dp):
-        ...
+    def exec(self, interp: Interpreter):
+        interp.tape[interp.dp] += self.val
 
 
 @dataclass
@@ -69,8 +85,8 @@ class SHF(Instruction):
     def __str__(self):
         return ">" * self.off if self.off > 0 else "<" * self.off
 
-    def exec(tape, dp):
-        ...
+    def exec(self, interp: Interpreter):
+        interp.dp += self.off
 
 
 @dataclass
@@ -86,9 +102,9 @@ class MOV(Instruction):
 
         return f"{to_src}[-{to_dest}+{from_dest}]{from_src}"
 
-    def exec(tape, dp):
-        ...
-
+    def exec(self, interp: Interpreter):
+        interp.tape[interp.dp + self.dest] += interp.tape[interp.dp + self.src]
+        interp.tape[interp.dp + self.src] = 0
 
 @dataclass
 class COPY(Instruction):
@@ -103,19 +119,29 @@ class COPY(Instruction):
 
         return f"[-{to_tmp}+{to_dest}+{go_back}]{writeback}"
 
-    def exec(tape, dp):
-        ...
+    def exec(self, interp: Interpreter):
+        interp.tape[interp.dp + self.dest] = interp.tape[interp.dp + self.src]
 
 
 @dataclass
 class LOOP(Instruction):
-    inst: list[Instruction]
+    insts: list[Instruction]
     
     def __str__(self):
         return "[" + "".join(map(str, self.inst)) + "]"
 
-    def exec(tape, dp):
-        ...
+    def exec(self, interp: Interpreter):
+        while interp.dp:
+            for i in self.insts:
+                i.exec(interp)
+        
 
+
+if __name__ == "__main__":
+    i = Interpreter()
+    print(i.disp(10))
+    ADD(69).exec(i)
+    MOV(0, 1).exec(i)
+    print(i.disp(10))
 
 
