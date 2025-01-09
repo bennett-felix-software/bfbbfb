@@ -85,21 +85,14 @@ def test_stack_complex():
     i.exec(*pop_from_stack())  # pop, get 4
     assert i.tape[2] == 4
 
-    i.exec(ZERO())  # zero out
+    i.exec(ZERO())  # zero out for good luck
     assert i.tape == [0, 4, 0, 1, 1, 1, 0]
     assert i.dp == 2
 
 
 def test_loop():
     i = Interpreter(set_tape=[5, 0], debug=True)
-    i.exec(
-        LOOP(
-            ADD(-1),
-            SHF(1),
-            ADD(1),
-            SHF(-1),
-        )
-    )
+    i.exec(LOOP(ADD(-1), SHF(1), ADD(1), SHF(-1)))
 
     assert i.tape[0] == 0
     assert i.tape[1] == 5
@@ -108,17 +101,12 @@ def test_loop():
 def test_copy():
     i = Interpreter([0, 0, 3, 0], debug=True)
     i.dp = 2
-    i.exec(
-        COPY(0, -2, 1),
-    )
+    i.exec(COPY(0, -2, 1))
     assert i.tape == [0, 0, 3, 3]
 
 
 def test_move():
     i = Interpreter()
-    i.exec(
-        ADD(69),
-        MOV(0, 1),
-    )
+    i.exec(ADD(69), MOV(0, 1))
     assert i.tape[0] == 0
     assert i.tape[1] == 69
