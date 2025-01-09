@@ -136,7 +136,7 @@ class COPY(Instruction):
         return f"[-{to_tmp}+{to_dest}+{go_back}]{writeback}"
 
     def exec(self, interp: Interpreter):
-        interp.tape[interp.dp + self.dest] = interp.tape[interp.dp + self.src]
+        interp.tape[interp.dp + self.dest] = interp.tape[interp.dp]
 
 
 class LOOP(Instruction):

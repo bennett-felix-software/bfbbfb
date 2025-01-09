@@ -36,7 +36,18 @@ def test_loop():
     assert i.tape[1] == 5
 
 
-def test_smoke():
+def test_copy():
+    i = Interpreter([0, 0, 3, 0], debug=True)
+    i.dp = 2
+    i.exec(
+        [
+            COPY(-2, 1),
+        ]
+    )
+    assert i.tape == [0, 0, 3, 3]
+
+
+def test_move():
     i = Interpreter()
     i.exec(
         [
