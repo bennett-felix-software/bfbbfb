@@ -31,7 +31,7 @@ def decrement():
 
 class Interpreter:
 
-    def __init__(self, set_tape=None, tape_size=30000):
+    def __init__(self, set_tape=None, tape_size=30000, debug=False):
         if not set_tape:
             self.tape = [0 for _ in range(tape_size)]
         else:
@@ -39,18 +39,24 @@ class Interpreter:
             self.tape_size = len(set_tape)
 
         self.dp = 0
+        self.debug = debug
 
-    def disp(self, cells: int):
+    def disp(self, cells=None):
+        if not cells:
+            cells = self.tape_size
         s = ""
         for i in range(cells):
             s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
         return s
 
-    def exec(self, program, debug=False):
+    def exec(self, program):
         for inst in program:
+            if self.debug:
+                print(type(inst))
             inst.exec(self)
-            if debug:
-                self.disp(self.tape_size)
+            if self.debug:
+                print(self.disp(self.tape_size))
+
             
 
 
@@ -143,9 +149,9 @@ class LOOP(Instruction):
         return "[" + "".join(map(str, self.insts)) + "]"
 
     def exec(self, interp: Interpreter):
-        while interp.dp:
+        while interp.tape[interp.dp]:
             for i in self.insts:
-                i.exec(interp)
+                interp.exec([i])
 
 
 def add_to_stack():
@@ -167,8 +173,8 @@ def add_to_stack():
             ),
             SHF(1)
         ),
-        ADD(-1),
-        SHF(-1)
+        SHF(-2),
+        ADD(-1)
     ]
 
 
