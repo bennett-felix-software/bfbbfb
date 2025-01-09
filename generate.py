@@ -144,6 +144,32 @@ class LOOP(Instruction):
                 i.exec(interp)
 
 
+def add_to_stack():
+    return [
+        LOOP(
+            MOV(0, 1),
+            SHF(2),
+            LOOP(
+                SHF(-1)
+            ),
+            SHF(-1)
+        ),
+        ADD(1),
+        LOOP(
+            MOV(0, -1),
+            SHF(-2),
+            LOOP(
+                SHF(1)
+            ),
+            SHF(1)
+        ),
+        ADD(-1),
+        SHF(-1)
+    ]
+
+
+
+
 if __name__ == "__main__":
     i = Interpreter()
     print(i.disp(10))
