@@ -27,3 +27,79 @@ def decrement():
 
 
 # End Felix Begin Bennett
+
+class Instruction:
+    def __str__(self):
+        raise Exception("not implemented")
+    def exec(self):
+        raise Exception("not implemented")
+
+@dataclass
+class OUT(Instruction):
+    s: str
+    
+    def __str__(self):
+        ...
+
+    def exec(tape, dp):
+        ...
+
+
+@dataclass
+class ADD(Instruction):
+    val: int
+    
+    def __str__(self):
+        ...
+
+    def exec(tape, dp):
+        ...
+
+
+@dataclass
+class SHF(Instruction):
+    off: int
+    
+    def __str__(self):
+        ...
+
+    def exec(tape, dp):
+        ...
+
+
+@dataclass
+class MOV(Instruction):
+    src: int
+    dest: int
+    
+    def __str__(self):
+        ...
+
+    def exec(tape, dp):
+        ...
+
+
+@dataclass
+class COPY(Instruction):
+    tmp: int
+    dest: int
+    
+    def __str__(self):
+        ...
+
+    def exec(tape, dp):
+        ...
+
+
+@dataclass
+class LOOP(Instruction):
+    inst: str
+    
+    def __str__(self):
+        ...
+
+    def exec(tape, dp):
+        ...
+
+
+
