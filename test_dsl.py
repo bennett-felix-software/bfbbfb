@@ -1,6 +1,14 @@
 import pytest
 
-from generate import ADD, LOOP, MOV, SHF, Interpreter, add_to_stack
+from generate import (
+    ADD,
+    COPY,
+    LOOP,
+    MOV,
+    SHF,
+    Interpreter,
+    add_to_stack,
+)
 
 
 def test_add_stack():

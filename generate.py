@@ -154,9 +154,23 @@ class LOOP(Instruction):
 
 def add_to_stack():
     return [
-        LOOP(MOV(0, 1), SHF(2), LOOP(SHF(-1)), SHF(-1)),
+        LOOP(
+            MOV(0, 1),
+            SHF(2),
+            LOOP(
+                SHF(-1),
+            ),
+            SHF(-1),
+        ),
         ADD(1),
-        LOOP(MOV(0, -1), SHF(-2), LOOP(SHF(1)), SHF(1)),
+        LOOP(
+            MOV(0, -1),
+            SHF(-2),
+            LOOP(
+                SHF(1),
+            ),
+            SHF(1),
+        ),
         SHF(-2),
         ADD(-1),
     ]
