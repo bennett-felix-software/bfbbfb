@@ -56,15 +56,3 @@ def pop_from_stack():
         ADD(1),
         SHF(-1),
     ]
-
-
-if __name__ == "__main__":
-    i = Interpreter()
-    print(i.disp(10))
-    i.exec(
-        [
-            ADD(69),
-            MOV(0, 1),
-        ]
-    )
-    print(i.disp(10))
