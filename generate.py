@@ -117,20 +117,31 @@ class MOV(Instruction):
 
 
 @dataclass
+class ZERO(Instruction):
+    def __str__(self):
+        return "[-]"
+
+    def exec(self, interp: Interpreter):
+        interp.tape[interp.dp] = 0
+
+
+@dataclass
 class COPY(Instruction):
+    src: int
     tmp: int
     dest: int
 
     def __str__(self):
-        to_tmp = SHF(self.tmp)
-        to_dest = SHF(self.dest - self.tmp)
-        go_back = SHF(-self.dest)
-        writeback = MOV(self.tmp, 0)
+        to_src = SHF(self.src)
+        to_tmp = SHF(self.src - self.tmp)
+        to_dest = SHF(self.dest - (self.src - self.tmp))
+        go_back = SHF(-self.dest + (self.src - self.tmp))
+        writeback = MOV(self.tmp, self.src)
 
         return f"[-{to_tmp}+{to_dest}+{go_back}]{writeback}"
 
     def exec(self, interp: Interpreter):
-        interp.tape[interp.dp + self.dest] = interp.tape[interp.dp]
+        interp.tape[interp.dp + self.dest] = interp.tape[interp.dp + self.src]
 
 
 class LOOP(Instruction):

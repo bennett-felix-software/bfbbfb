@@ -6,6 +6,7 @@ from generate import (
     LOOP,
     MOV,
     SHF,
+    ZERO,
     Interpreter,
     add_to_stack,
     pop_from_stack,
@@ -47,6 +48,45 @@ def test_pop_from_stack(stack_size):
     assert i.tape[-1] == 0
     assert i.dp == 1
 
+def test_stack_complex():
+    i = Interpreter([0, 1, 0, 1, 1, 1, 0])
+    # temp, global stack index, stack in/out, staaaaaaaaaaaaaaack, stack head
+    # testing [[][]][], our ancient nemesis
+
+    i.exec([SHF(2)])
+    i.exec([COPY(-1, -2, 0), *add_to_stack()]) # add 1 to stack
+    assert i.tape[-2:] == [0, 1]
+
+    i.exec([SHF(-1), ADD(1), SHF(1)]) # increment global
+    i.exec([COPY(-1, -2, 0), *add_to_stack()]) # add 2 to stack
+    assert i.tape[-3:] == [0, 2, 1]
+
+    i.exec(pop_from_stack()) # pop, get 2
+    assert i.tape[2] == 2
+
+    i.exec([ZERO()]) # zero out
+    i.exec([SHF(-1), ADD(1), SHF(1)]) # increment global
+    i.exec([COPY(-1, -2, 0), *add_to_stack()]) # add 3 to stack
+    assert i.tape[-3:] == [0, 3, 1]
+
+    i.exec(pop_from_stack()) # pop, get 3
+    assert i.tape[2] == 3
+
+    i.exec([ZERO()]) # zero out
+    i.exec(pop_from_stack()) # pop, get 1
+    assert i.tape[2] == 1
+    
+    i.exec([ZERO()]) # zero out
+    i.exec([SHF(-1), ADD(1), SHF(1)]) # increment global
+    i.exec([COPY(-1, -2, 0), *add_to_stack()]) # add 4 to stack
+    assert i.tape[-2:] == [0, 4]
+
+    i.exec(pop_from_stack()) # pop, get 4
+    assert i.tape[2] == 4
+
+    i.exec([ZERO()]) # zero out
+    assert i.tape == [0, 4, 0, 1, 1, 1, 0]
+    assert i.dp == 2
 
 def test_loop():
     i = Interpreter(set_tape=[5, 0], debug=True)
@@ -70,7 +110,7 @@ def test_copy():
     i.dp = 2
     i.exec(
         [
-            COPY(-2, 1),
+            COPY(0, -2, 1),
         ]
     )
     assert i.tape == [0, 0, 3, 3]
