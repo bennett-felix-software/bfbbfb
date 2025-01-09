@@ -29,14 +29,15 @@ def decrement():
 
 # End Felix Begin Bennett
 
-
-@dataclass
 class Interpreter:
-    tape: [int]
-    dp: int
 
-    def __init__(self):
-        self.tape = [0 for _ in range(30000)]
+    def __init__(self, set_tape=None, tape_size=30000):
+        if not set_tape:
+            self.tape = [0 for _ in range(tape_size)]
+        else:
+            self.tape = set_tape
+            self.tape_size = len(set_tape)
+
         self.dp = 0
 
     def disp(self, cells: int):
@@ -45,9 +46,12 @@ class Interpreter:
             s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
         return s
 
-    def exec(self, program):
+    def exec(self, program, debug=False):
         for inst in program:
             inst.exec(self)
+            if debug:
+                self.disp(self.tape_size)
+            
 
 
 class Instruction:
