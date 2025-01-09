@@ -1,7 +1,4 @@
-# Begin Bennett
 from dataclasses import dataclass
-
-# End Bennett Begin Felix
 
 DP = "r12"
 IP = "r13"
@@ -25,9 +22,6 @@ def increment():
 
 def decrement():
     print(f"dec byte ptr [{DP}]")
-
-
-# End Felix Begin Bennett
 
 
 class Interpreter:
@@ -169,6 +163,7 @@ def add_to_stack():
         SHF(-2),
         LOOP(SHF(-1)),
     ]
+
 
 def pop_from_stack():
     return [

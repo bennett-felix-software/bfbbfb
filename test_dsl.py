@@ -1,4 +1,5 @@
 import pytest
+
 from generate import (
     ADD,
     COPY,
@@ -10,9 +11,10 @@ from generate import (
     pop_from_stack,
 )
 
+
 @pytest.mark.parametrize("stack_size", [4, 1])
 def test_add_to_stack(stack_size):
-    i = Interpreter([1, 3, *[1]*stack_size, 0])
+    i = Interpreter([1, 3, *[1] * stack_size, 0])
     i.exec([SHF(1)])
     i.exec(add_to_stack())
 
@@ -21,6 +23,7 @@ def test_add_to_stack(stack_size):
     assert i.tape[-2] == 0
     assert i.tape[-1] == 3
     assert i.dp == 1
+
 
 def test_add_to_stack_many():
     i = Interpreter([1, 0, 1, 1, 1, 0])
@@ -31,9 +34,10 @@ def test_add_to_stack_many():
     assert i.tape == [1, 0, 0, 3, 2, 1]
     assert i.dp == 1
 
+
 @pytest.mark.parametrize("stack_size", [4, 1, 0])
 def test_pop_from_stack(stack_size):
-    i = Interpreter([1, 0, *[1]*stack_size, 0, 3], debug=True)
+    i = Interpreter([1, 0, *[1] * stack_size, 0, 3], debug=True)
     i.exec([SHF(1)])
     i.exec(pop_from_stack())
 
@@ -42,7 +46,6 @@ def test_pop_from_stack(stack_size):
     assert i.tape[-2] == 1
     assert i.tape[-1] == 0
     assert i.dp == 1
-
 
 
 def test_loop():
