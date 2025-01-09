@@ -18,7 +18,6 @@ from dsl import (
 # add_to_stack: expects to the value to be pushed to be in <temp>
 # pop_from_stack: expects <temp> to be 0
 
-
 def add_to_stack():
     return [
         MOV(0, 1),
@@ -56,3 +55,9 @@ def pop_from_stack():
         ADD(1),
         SHF(-1),
     ]
+
+
+
+
+
+
