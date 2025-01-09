@@ -43,13 +43,17 @@ class Interpreter:
             s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
         return s
 
-    def exec(self, program):
+    def exec(self, *program):
         for inst in program:
             if self.debug:
                 print(type(inst))
             inst.exec(self)
             if self.debug:
                 print(self.disp(self.tape_size))
+
+class PrintInterpreter(Interpreter):
+    def exec(self, *program):
+        print("".join(map(str, program)))
 
 
 class Instruction:
@@ -81,7 +85,7 @@ class ADD(Instruction):
     val: int
 
     def __str__(self):
-        return "+" * self.val if self.val > 0 else "-" * self.val
+        return "+" * self.val if self.val > 0 else "-" * -self.val
 
     def exec(self, interp: Interpreter):
         interp.tape[interp.dp] += self.val
@@ -92,7 +96,7 @@ class SHF(Instruction):
     off: int
 
     def __str__(self):
-        return ">" * self.off if self.off > 0 else "<" * self.off
+        return ">" * self.off if self.off > 0 else "<" * -self.off
 
     def exec(self, interp: Interpreter):
         interp.dp += self.off
@@ -133,12 +137,13 @@ class COPY(Instruction):
 
     def __str__(self):
         to_src = SHF(self.src)
-        to_tmp = SHF(self.src - self.tmp)
-        to_dest = SHF(self.dest - (self.src - self.tmp))
-        go_back = SHF(-self.dest + (self.src - self.tmp))
-        writeback = MOV(self.tmp, self.src)
+        to_tmp = SHF(self.tmp - self.src)
+        to_dest = SHF(self.dest - self.tmp)
+        go_back = SHF(self.src - self.dest)
+        writeback = MOV(0, self.src - self.tmp)
+        from_tmp = SHF(-self.tmp)
 
-        return f"[-{to_tmp}+{to_dest}+{go_back}]{writeback}"
+        return f"{to_src}[-{to_tmp}+{to_dest}+{go_back}]{to_tmp}{writeback}{from_tmp}"
 
     def exec(self, interp: Interpreter):
         interp.tape[interp.dp + self.dest] = interp.tape[interp.dp + self.src]
@@ -154,7 +159,7 @@ class LOOP(Instruction):
     def exec(self, interp: Interpreter):
         while interp.tape[interp.dp]:
             for i in self.insts:
-                interp.exec([i])
+                interp.exec(i)
 
 
 def add_to_stack():
