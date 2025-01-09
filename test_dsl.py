@@ -1,21 +1,20 @@
 import pytest
 
-from generate import (
+from compile import add_to_stack, pop_from_stack
+from dsl import (
     ADD,
     COPY,
     LOOP,
     MOV,
     SHF,
     ZERO,
-    Interpreter,
-    add_to_stack,
-    pop_from_stack,
+    DSLInterpreter,
 )
 
 
 @pytest.mark.parametrize("stack_size", [4, 1])
 def test_add_to_stack(stack_size):
-    i = Interpreter([1, 3, *[1] * stack_size, 0])
+    i = DSLInterpreter([1, 3, *[1] * stack_size, 0])
     i.exec(SHF(1))
     i.exec(*add_to_stack())
 
@@ -27,7 +26,7 @@ def test_add_to_stack(stack_size):
 
 
 def test_add_to_stack_many():
-    i = Interpreter([1, 0, 1, 1, 1, 0])
+    i = DSLInterpreter([1, 0, 1, 1, 1, 0])
     i.exec(SHF(1), ADD(1), *add_to_stack())
     i.exec(ADD(2), *add_to_stack())
     i.exec(ADD(3), *add_to_stack())
@@ -38,7 +37,7 @@ def test_add_to_stack_many():
 
 @pytest.mark.parametrize("stack_size", [4, 1, 0])
 def test_pop_from_stack(stack_size):
-    i = Interpreter([1, 0, *[1] * stack_size, 0, 3], debug=True)
+    i = DSLInterpreter([1, 0, *[1] * stack_size, 0, 3], debug=True)
     i.exec(SHF(1))
     i.exec(*pop_from_stack())
 
@@ -50,7 +49,7 @@ def test_pop_from_stack(stack_size):
 
 
 def test_stack_complex():
-    i = Interpreter([0, 1, 0, 1, 1, 1, 0])
+    i = DSLInterpreter([0, 1, 0, 1, 1, 1, 0])
     # temp, global stack index, stack in/out, staaaaaaaaaaaaaaack, stack head
     # testing [[][]][], our ancient nemesis
 
@@ -91,7 +90,7 @@ def test_stack_complex():
 
 
 def test_loop():
-    i = Interpreter(set_tape=[5, 0], debug=True)
+    i = DSLInterpreter(set_tape=[5, 0], debug=True)
     i.exec(LOOP(ADD(-1), SHF(1), ADD(1), SHF(-1)))
 
     assert i.tape[0] == 0
@@ -99,14 +98,14 @@ def test_loop():
 
 
 def test_copy():
-    i = Interpreter([0, 0, 3, 0], debug=True)
+    i = DSLInterpreter([0, 0, 3, 0], debug=True)
     i.dp = 2
     i.exec(COPY(0, -2, 1))
     assert i.tape == [0, 0, 3, 3]
 
 
 def test_move():
-    i = Interpreter()
+    i = DSLInterpreter()
     i.exec(ADD(69), MOV(0, 1))
     assert i.tape[0] == 0
     assert i.tape[1] == 69
