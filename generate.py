@@ -45,6 +45,10 @@ class Interpreter:
             s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
         return s
 
+    def exec(self, program):
+        for inst in program:
+            inst.exec(self)
+
 
 class Instruction:
     def __str__(self):
@@ -143,6 +147,10 @@ class LOOP(Instruction):
 if __name__ == "__main__":
     i = Interpreter()
     print(i.disp(10))
-    ADD(69).exec(i)
-    MOV(0, 1).exec(i)
+    i.exec(
+        [
+            ADD(69),
+            MOV(0, 1),
+        ]
+    )
     print(i.disp(10))
