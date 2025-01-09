@@ -131,12 +131,12 @@ class COPY(Instruction):
         interp.tape[interp.dp + self.dest] = interp.tape[interp.dp + self.src]
 
 
-@dataclass
 class LOOP(Instruction):
-    insts: list[Instruction]
-
+    def __init__(self, *args):
+        self.insts = args
+    
     def __str__(self):
-        return "[" + "".join(map(str, self.inst)) + "]"
+        return "[" + "".join(map(str, self.insts)) + "]"
 
     def exec(self, interp: Interpreter):
         while interp.dp:
