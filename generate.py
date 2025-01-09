@@ -40,7 +40,12 @@ class OUT(Instruction):
     s: str
     
     def __str__(self):
-        ...
+        res = ""
+        for chr in self.s:
+            res += "+" * ord(chr) + "."
+            res += "-" * ord(chr)
+
+        return res
 
     def exec(tape, dp):
         ...
@@ -51,7 +56,7 @@ class ADD(Instruction):
     val: int
     
     def __str__(self):
-        ...
+        return "+" * self.val if self.val > 0 else "-" * self.val
 
     def exec(tape, dp):
         ...
@@ -62,7 +67,7 @@ class SHF(Instruction):
     off: int
     
     def __str__(self):
-        ...
+        return ">" * self.off if self.off > 0 else "<" * self.off
 
     def exec(tape, dp):
         ...
@@ -74,7 +79,12 @@ class MOV(Instruction):
     dest: int
     
     def __str__(self):
-        ...
+        to_src = SHF(self.src)
+        to_dest = SHF(self.dest - self.src)
+        from_dest = SHF(self.src - self.dest)
+        from_src = SHF(-self.src)
+
+        return f"{to_src}[-{to_dest}+{from_dest}]{from_src}"
 
     def exec(tape, dp):
         ...
@@ -86,7 +96,12 @@ class COPY(Instruction):
     dest: int
     
     def __str__(self):
-        ...
+        to_tmp = SHF(self.tmp)
+        to_dest = SHF(self.dest - self.tmp)
+        go_back = SHF(-self.dest)
+        writeback = MOV(self.tmp, 0)
+
+        return f"[-{to_tmp}+{to_dest}+{go_back}]{writeback}"
 
     def exec(tape, dp):
         ...
@@ -94,10 +109,10 @@ class COPY(Instruction):
 
 @dataclass
 class LOOP(Instruction):
-    inst: str
+    inst: list[Instruction]
     
     def __str__(self):
-        ...
+        return "[" + "".join(map(str, self.inst)) + "]"
 
     def exec(tape, dp):
         ...
