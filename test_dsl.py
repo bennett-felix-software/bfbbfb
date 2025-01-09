@@ -1,6 +1,7 @@
 from generate import Interpreter, ADD, MOV, SHF, add_to_stack, LOOP
 import pytest
 
+
 def test_add_stack():
     i = Interpreter([1, 2, 0, 0, 0, 0, 0, 0, 1], debug=True)
     i.exec([SHF(1)])
@@ -8,20 +9,22 @@ def test_add_stack():
 
     assert False
 
+
 def test_loop():
     i = Interpreter(set_tape=[5, 0], debug=True)
-    i.exec([LOOP(
-               ADD(-1),
-               SHF(1),
-               ADD(1),
-               SHF(-1),
-           )])
+    i.exec(
+        [
+            LOOP(
+                ADD(-1),
+                SHF(1),
+                ADD(1),
+                SHF(-1),
+            )
+        ]
+    )
 
     assert i.tape[0] == 0
     assert i.tape[1] == 5
-
-
-
 
 
 def test_smoke():

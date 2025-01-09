@@ -29,8 +29,8 @@ def decrement():
 
 # End Felix Begin Bennett
 
-class Interpreter:
 
+class Interpreter:
     def __init__(self, set_tape=None, tape_size=30000, debug=False):
         if not set_tape:
             self.tape = [0 for _ in range(tape_size)]
@@ -56,8 +56,6 @@ class Interpreter:
             inst.exec(self)
             if self.debug:
                 print(self.disp(self.tape_size))
-
-            
 
 
 class Instruction:
@@ -144,7 +142,7 @@ class COPY(Instruction):
 class LOOP(Instruction):
     def __init__(self, *args):
         self.insts = args
-    
+
     def __str__(self):
         return "[" + "".join(map(str, self.insts)) + "]"
 
@@ -156,28 +154,12 @@ class LOOP(Instruction):
 
 def add_to_stack():
     return [
-        LOOP(
-            MOV(0, 1),
-            SHF(2),
-            LOOP(
-                SHF(-1)
-            ),
-            SHF(-1)
-        ),
+        LOOP(MOV(0, 1), SHF(2), LOOP(SHF(-1)), SHF(-1)),
         ADD(1),
-        LOOP(
-            MOV(0, -1),
-            SHF(-2),
-            LOOP(
-                SHF(1)
-            ),
-            SHF(1)
-        ),
+        LOOP(MOV(0, -1), SHF(-2), LOOP(SHF(1)), SHF(1)),
         SHF(-2),
-        ADD(-1)
+        ADD(-1),
     ]
-
-
 
 
 if __name__ == "__main__":
