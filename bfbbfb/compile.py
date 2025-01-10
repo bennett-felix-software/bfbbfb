@@ -1,5 +1,5 @@
 import sys
-from dsl import ADD, LOOP, MOV, SHF, IN, OUT
+from bfbbfb.dsl import ADD, LOOP, MOV, SHF, IN, OUT
 
 # !! Stack Structure !!
 #
@@ -102,13 +102,6 @@ def IF_EQ_THEN(comp, *instr):
         ADD(ord(comp)) # restore original program input
     ]
 
-arch = "x86"
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        arch = sys.argv[2]
-
-    assert arch in ["x86", "arm", "bf"], f"Unsupported ISA: {arch}"
-
 idp = {
     "x86": "ADD r12, 1\n",
     "arm": "ADDI X19, X19, #1\n",
@@ -123,56 +116,53 @@ ddp = {
     "arm": "SUBI X19, X19, #1\n",
     "bf": "<"
 }
-def EMIT_DECREMENT_DP():
-    global arch, idp
+def EMIT_DECREMENT_DP(arch):
+    global idp
     return OUT(idp[arch])
 
 it = {}
-def EMIT_INCREMENT_TAPE():
+def EMIT_INCREMENT_TAPE(arch):
     return []
 
 dt = {}
-def EMIT_DECREMENT_TAPE():
+def EMIT_DECREMENT_TAPE(arch):
     return []
 
 out = {}
-def EMIT_OUTPUT():
+def EMIT_OUTPUT(arch):
     return []
 
 inp = {}
-def EMIT_INPUT():
+def EMIT_INPUT(arch):
     return []
 
 bloop = {}
-def BEGIN_LOOP():
+def EMIT_BEGIN_LOOP(arch):
     return []
 
 eloop = {}
-def END_LOOP():
+def EMIT_END_LOOP(arch):
     return []
 
 header = {}
-def EMIT_HEADER():
+def EMIT_HEADER(arch):
     return []
 
-
-PROG = [
-    *EMIT_HEADER(),
-    SHF(1), # move to program_in
-    IN(),   # get in
-    LOOP(   # main loop, switch on all possible inputs
-        IF_EQ_THEN(">", EMIT_INCREMENT_DP()),
-        IF_EQ_THEN("<", EMIT_DECREMENT_DP()),
-        IF_EQ_THEN("+", EMIT_INCREMENT_TAPE()),
-        IF_EQ_THEN("-", EMIT_DECREMENT_TAPE()),
-        IF_EQ_THEN(".", EMIT_OUTPUT()),
-        IF_EQ_THEN(",", EMIT_INPUT()),
-        IF_EQ_THEN("[", *BEGIN_LOOP()),
-        IF_EQ_THEN("]", *END_LOOP()),
-    ),
-]
-
-# if __name__ == "__main__":
-    # print("".join(map(str, PROG)))
+def compile(arch):
+    return [
+        *EMIT_HEADER(arch),
+        SHF(1), # move to program_in
+        IN(),   # get in
+        LOOP(   # main loop, switch on all possible inputs
+            IF_EQ_THEN(">", EMIT_INCREMENT_DP(arch)),
+            IF_EQ_THEN("<", EMIT_DECREMENT_DP(arch)),
+            IF_EQ_THEN("+", EMIT_INCREMENT_TAPE(arch)),
+            IF_EQ_THEN("-", EMIT_DECREMENT_TAPE(arch)),
+            IF_EQ_THEN(".", EMIT_OUTPUT(arch)),
+            IF_EQ_THEN(",", EMIT_INPUT(arch)),
+            IF_EQ_THEN("[", *BEGIN_LOOP(arch)),
+            IF_EQ_THEN("]", *END_LOOP(arch)),
+        ),
+    ]
 
 

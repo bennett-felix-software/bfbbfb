@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from interpreter import Interpreter
+from bfbbfb.interpreter import Interpreter
 
 class Instruction(ABC):
 

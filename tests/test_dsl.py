@@ -1,5 +1,5 @@
-from dsl import  ADD, COPY, LOOP, MOV, SHF
-from interpreter import DSLInterpreter
+from bfbbfb.dsl import  ADD, COPY, LOOP, MOV, SHF
+from bfbbfb.interpreter import DSLInterpreter
 
 def test_loop():
     i = DSLInterpreter(set_tape=[5, 0])

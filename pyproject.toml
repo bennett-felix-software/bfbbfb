@@ -1,0 +1,14 @@
+[project]
+name = "bfbbfb"
+version = "1.0"
+authors = [
+  { name="Bennett", email="bgillig@umass.edu" },
+  { name="Felix", email="something@mit.edu" }
+]
+description = "Bennett & Felix's Best Brainfuck from Brainfuck (compiler)"
+readme = "README.md"
+
+
+[project.scripts]
+bfbbfb = "bfbbfb.run:run"
+

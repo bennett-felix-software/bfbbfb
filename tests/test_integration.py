@@ -1,7 +1,7 @@
 import pytest
-from bfbbfb import add_to_stack, pop_from_stack
-from dsl import ADD, COPY, SHF, ZERO
-from interpreter import (
+from bfbbfb.compile import add_to_stack, pop_from_stack
+from bfbbfb.dsl import ADD, COPY, SHF, ZERO
+from bfbbfb.interpreter import (
     DSLInterpreter,
     BFInterpreter,
 )
