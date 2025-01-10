@@ -52,7 +52,7 @@ class BrainFuck:
                     self.tape[self.dp] -= 1
                     ip += 1
                 case ".":
-                    print(self.tape[self.dp])
+                    print(self.tape[self.dp], end="")
                     ip += 1
                 case ",":
                     raise NotImplementedError

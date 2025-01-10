@@ -1,3 +1,4 @@
+import sys
 from dsl import (
     ADD,
     LOOP,
@@ -105,5 +106,78 @@ def IF_EQ_THEN(comp, *instr):
         SHF(1), # go back to program input
         ADD(ord(comp)) # restore original program input
     ]
+
+arch = "x86"
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        arch = sys.argv[2]
+
+    assert arch in ["x86", "arm", "bf"], f"Unsupported ISA: {arch}"
+
+idp = {
+    "x86": "ADD r12, 1\n",
+    "arm": "ADDI X19, X19, #1\n",
+    "bf": ">"
+}
+def EMIT_INCREMENT_DP():
+    global arch, idp
+    return OUT(idp[arch])
+
+ddp = {
+    "x86": "SUB r12, 1\n",
+    "arm": "SUBI X19, X19, #1\n",
+    "bf": "<"
+}
+def EMIT_DECREMENT_DP():
+    global arch, idp
+    return OUT(idp[arch])
+
+it = {}
+def EMIT_INCREMENT_TAPE():
+    return []
+
+dt = {}
+def EMIT_DECREMENT_TAPE():
+    return []
+
+out = {}
+def EMIT_OUTPUT():
+    return []
+
+inp = {}
+def EMIT_INPUT():
+    return []
+
+bloop = {}
+def BEGIN_LOOP():
+    return []
+
+eloop = {}
+def END_LOOP():
+    return []
+
+header = {}
+def EMIT_HEADER():
+    return []
+
+
+PROG = [
+    *EMIT_HEADER(),
+    SHF(1), # move to program_in
+    IN(),   # get in
+    LOOP(   # main loop, switch on all possible inputs
+        IF_EQ_THEN(">", EMIT_INCREMENT_DP()),
+        IF_EQ_THEN("<", EMIT_DECREMENT_DP()),
+        IF_EQ_THEN("+", EMIT_INCREMENT_TAPE()),
+        IF_EQ_THEN("-", EMIT_DECREMENT_TAPE()),
+        IF_EQ_THEN(".", EMIT_OUTPUT()),
+        IF_EQ_THEN(",", EMIT_INPUT()),
+        IF_EQ_THEN("[", *BEGIN_LOOP()),
+        IF_EQ_THEN("]", *END_LOOP()),
+    ),
+]
+
+# if __name__ == "__main__":
+    # print("".join(map(str, PROG)))
 
 
