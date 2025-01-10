@@ -1,10 +1,5 @@
 import sys
-from dsl import (
-    ADD,
-    LOOP,
-    MOV,
-    SHF,
-)
+from dsl import ADD, LOOP, MOV, SHF, IN, OUT
 
 # !! Stack Structure !!
 #

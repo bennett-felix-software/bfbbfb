@@ -1,13 +1,9 @@
 import pytest
 from bfbbfb import add_to_stack, pop_from_stack
-from dsl import (
-    ADD,
-    COPY,
-    LOOP,
-    MOV,
-    SHF,
-    ZERO,
+from dsl import ADD, COPY, SHF, ZERO
+from interpreter import (
     DSLInterpreter,
+    BFInterpreter,
 )
 
 
@@ -47,8 +43,9 @@ def test_pop_from_stack(stack_size):
     assert i.dp == 1
 
 
-def test_stack_complex():
-    i = DSLInterpreter([0, 1, 0, 1, 1, 1, 0])
+@pytest.mark.parametrize("interp", [DSLInterpreter, BFInterpreter])
+def test_stack_complex(interp):
+    i = interp([0, 1, 0, 1, 1, 1, 0])
     # temp, global stack index, stack in/out, staaaaaaaaaaaaaaack, stack head
     # testing [[][]][], our ancient nemesis
 

@@ -1,13 +1,25 @@
-class BrainFuck:
-    def __init__(self, set_tape=None, tape_size=30000, debug=False):
+class Interpreter:
+    def __init__(
+        self,
+        set_tape=None,
+        set_input="",
+        tape_size=30000,
+        cell_size=1,
+        debug=False
+    ):
         if not set_tape:
             self.tape = [0 for _ in range(tape_size)]
         else:
             self.tape = set_tape
             self.tape_size = len(set_tape)
 
-        self.dp = 0
         self.debug = debug
+        self.cell_size = cell_size
+        self.input = input
+
+        self.dp = 0
+        self.itp = 0
+
 
     def disp(self, cells=None):
         if not cells:
@@ -16,6 +28,20 @@ class BrainFuck:
         for i in range(cells):
             s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
         return s
+    
+
+class DSLInterpreter(Interpreter):
+
+    def exec(self, *program):
+        for inst in program:
+            if self.debug:
+                print(type(inst))
+            inst.exec(self)
+            if self.debug:
+                print(self.disp(self.tape_size))
+
+
+class BFInterpreter(Interpreter):
 
     def exec(self, *program):
         for inst in program:
@@ -41,28 +67,23 @@ class BrainFuck:
             match code[ip]:
                 case ">":
                     self.dp += 1
-                    ip += 1
                 case "<":
                     self.dp -= 1
-                    ip += 1
                 case "+":
                     self.tape[self.dp] += 1
-                    ip += 1
                 case "-":
                     self.tape[self.dp] -= 1
-                    ip += 1
                 case ".":
                     print(self.tape[self.dp], end="")
-                    ip += 1
                 case ",":
-                    raise NotImplementedError
+                    self.tape[self.dp] = ord(self.input[self.itp])
+                    self.itp += 1
                 case "[":
-                    if self.tape[self.dp]:
-                        ip += 1
-                    else:
-                        ip = jump_table[ip] + 1
+                    if not self.tape[self.dp]:
+                        ip = jump_table[ip]
                 case "]":
                     if self.tape[self.dp]:
-                        ip = jump_table[ip] + 1
-                    else:
-                        ip += 1
+                        ip = jump_table[ip]
+            ip += 1
+
+
