@@ -8,10 +8,6 @@ from dsl import (
     DSLInterpreter,
 )
 
-
-
-
-
 def test_loop():
     i = DSLInterpreter(set_tape=[5, 0], debug=True)
     i.exec(LOOP(ADD(-1), SHF(1), ADD(1), SHF(-1)))

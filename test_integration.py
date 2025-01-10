@@ -1,5 +1,5 @@
 import pytest
-from compile import add_to_stack, pop_from_stack
+from bfbbfb import add_to_stack, pop_from_stack
 from dsl import (
     ADD,
     COPY,
