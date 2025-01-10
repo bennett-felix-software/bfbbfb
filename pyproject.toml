@@ -8,7 +8,10 @@ authors = [
 description = "Bennett & Felix's Best Brainfuck from Brainfuck (compiler)"
 readme = "README.md"
 
-
 [project.scripts]
 bfbbfb = "bfbbfb.run:run"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
