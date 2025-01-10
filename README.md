@@ -7,7 +7,7 @@ to run:
 ```
 git clone https://github.com/fprasx/bbffbf
 pip install -e bbffbf
-bfbbfb --help
+python -m bfbbfb
 ```
 
 Includes
