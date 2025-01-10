@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+from abc import ABC, abstractmethod
 
 class DSLInterpreter:
     def __init__(self, set_tape=None, tape_size=30000, debug=False):
@@ -29,17 +29,22 @@ class DSLInterpreter:
                 print(self.disp(self.tape_size))
 
 
-class Instruction:
-    def __str__(self):
-        raise Exception("not implemented")
+class Instruction(ABC):
 
+    @abstractmethod
+    def __str__(self):
+        pass
+
+    @abstractmethod
     def exec(self):
-        raise Exception("not implemented")
+        pass
+    pass
 
 
 @dataclass
 class OUT(Instruction):
     s: str
+    repeat: int = 1
 
     def __str__(self):
         res = ""
@@ -47,10 +52,10 @@ class OUT(Instruction):
             res += "+" * ord(chr) + "."
             res += "-" * ord(chr)
 
-        return res
+        return res * self.repeat
 
     def exec(self, interp: DSLInterpreter):
-        print(self.s)
+        print(self.s * self.repeat)
 
 
 @dataclass
@@ -133,3 +138,11 @@ class LOOP(Instruction):
         while interp.tape[interp.dp]:
             for i in self.insts:
                 interp.exec(i)
+
+
+@dataclass
+class IN(Instruction):
+
+    def __str__(self):
+        return ","
+
