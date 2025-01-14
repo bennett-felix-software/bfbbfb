@@ -1,9 +1,9 @@
 .PHONY compile:
-	@python -m bfbbfb compile x86 > compile.bf
+	@python3 -m bfbbfb compile x86 > compile.bf
 
 BF="++++[->+<]"
 run: compile
-	@echo $(BF) | python -m bfbbfb run --file compile.bf
+	@echo $(BF) | python3 -m bfbbfb run --file compile.bf
 
 
 

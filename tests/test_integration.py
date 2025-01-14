@@ -130,13 +130,13 @@ def test_begin_loop(capsys):
     captured = capsys.readouterr()
     assert '''\
 sa:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     je ea
 saa:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     je eaa
 saaa:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     je eaaa
 ''' == captured.out
 
@@ -156,21 +156,21 @@ def test_end_loop(capsys):
     captured = capsys.readouterr()
     assert '''\
 sa:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     je ea
 saa:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     je eaa
 saaa:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     je eaaa
 eaaa:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     jne saaa
 eaa:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     jne saa
 ea:
-    cmp byte ptr [rsp+r12], 0
+    cmp byte [rsp+r12], 0
     jne sa
 '''== captured.out
