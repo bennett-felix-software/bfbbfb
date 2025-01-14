@@ -268,13 +268,13 @@ def compile(arch):
         SHF(1), # move to program_in
         IN(),   # get in
         LOOP(   # main loop, switch on all possible inputs
-            if_eq_then(">", EMIT_INCREMENT_DP(arch)),
-            if_eq_then("<", EMIT_DECREMENT_DP(arch)),
-            if_eq_then("+", EMIT_INCREMENT_TAPE(arch)),
-            if_eq_then("-", EMIT_DECREMENT_TAPE(arch)),
-            if_eq_then(".", EMIT_OUTPUT(arch)),
-            if_eq_then(",", EMIT_INPUT(arch)),
-            if_eq_then("[", *BEGIN_LOOP(arch)),
-            if_eq_then("]", *END_LOOP(arch)),
+            *if_eq_then(">", EMIT_INCREMENT_DP(arch)),
+            *if_eq_then("<", EMIT_DECREMENT_DP(arch)),
+            *if_eq_then("+", EMIT_INCREMENT_TAPE(arch)),
+            *if_eq_then("-", EMIT_DECREMENT_TAPE(arch)),
+            *if_eq_then(".", EMIT_OUTPUT(arch)),
+            *if_eq_then(",", EMIT_INPUT(arch)),
+            *if_eq_then("[", *BEGIN_LOOP(arch)),
+            *if_eq_then("]", *END_LOOP(arch)),
         ),
     ]
