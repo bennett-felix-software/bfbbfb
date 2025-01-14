@@ -1,23 +1,70 @@
-from bfbbfb.dsl import  ADD, COPY, LOOP, MOV, SHF
-from bfbbfb.interpreter import DSLInterpreter
+from bfbbfb.dsl import (
+    ADD,
+    SHF,
+    MOV,
+    ZERO,
+    COPY,
+    LOOP,
+    IN,
+    OUT_N,
+    OUT_S,
+    Instruction,
+)
+from bfbbfb.interpreter import DSLInterpreter, BFInterpreter
 
-def test_loop():
-    i = DSLInterpreter(set_tape=[5, 0])
-    i.exec(LOOP(ADD(-1), SHF(1), ADD(1), SHF(-1)))
+def assert_parity(
+    tape: list[int],
+    *PROG: list[Instruction]
+) -> tuple[DSLInterpreter, BFInterpreter]:
+    dsl = DSLInterpreter(set_tape=[*tape])
+    bf = BFInterpreter(set_tape=[*tape])
 
-    assert i.tape[0] == 0
-    assert i.tape[1] == 5
+    for instr in PROG:
+        dsl.exec(instr)
+        bf.exec(instr)
 
+        assert dsl.tape == bf.tape
+        assert dsl.dp == bf.dp
+
+    return (dsl, bf)
+
+def test_add():
+    dsl, _ = assert_parity([0], ADD(69))
+    assert dsl.tape == [69]
+
+def test_shf():
+    dsl, _ = assert_parity([0, 0, 0, 0], SHF(3), SHF(-1))
+    assert dsl.dp == 2
+
+def test_mov():
+    dsl, _ = assert_parity([0, 5], MOV(0, 1))
+    assert dsl.tape == [0, 5]
+    assert dsl.dp == 0
 
 def test_copy():
-    i = DSLInterpreter([0, 0, 3, 0])
-    i.dp = 2
-    i.exec(COPY(0, -2, 1))
-    assert i.tape == [0, 0, 3, 3]
+    dsl, _ = assert_parity([5, 0, 0], COPY(0, 2, 1))
+    assert dsl.tape == [5, 5, 0]
+    assert dsl.dp == 0
 
+def test_loop():
+    dsl, _ = assert_parity([5, 0], LOOP(ADD(-1), SHF(1), ADD(1), SHF(-1)))
+    assert dsl.tape == [0, 5]
+    assert dsl.dp == 0
 
-def test_move():
-    i = DSLInterpreter([69, 0])
-    i.exec(MOV(0, 1))
-    assert i.tape[0] == 0
-    assert i.tape[1] == 69
+def test_out_n(capsys):
+    i = BFInterpreter([97, 3, 0, 0])
+    i.exec(OUT_N(0, 1, 2, 3))
+
+    assert i.tape == [97, 3, 0, 0]
+    assert i.dp == 0
+
+    captured = capsys.readouterr()
+    assert captured.out == "aaa"
+
+def test_out_s(capsys):
+    i = BFInterpreter([0])
+    i.exec(OUT_S("hello"))
+
+    captured = capsys.readouterr()
+    assert captured.out == "hello"
+    

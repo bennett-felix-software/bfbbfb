@@ -76,7 +76,7 @@ class BFInterpreter(Interpreter):
                     self.tape[self.dp] -= 1
                     self.tape[self.dp] %= 2**(self.cell_size*8)
                 case ".":
-                    print(self.tape[self.dp], end="")
+                    print(chr(self.tape[self.dp]), end="")
                 case ",":
                     self.tape[self.dp] = ord(self.input[self.itp])
                     self.itp += 1

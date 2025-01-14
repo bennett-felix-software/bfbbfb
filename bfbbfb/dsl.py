@@ -11,23 +11,6 @@ class Instruction(ABC):
     @abstractmethod
     def exec(self):
         pass
-    pass
-
-
-@dataclass
-class OUT_S(Instruction):
-    s: str
-
-    def __str__(self):
-        res = ""
-        for chr in self.s:
-            res += "+" * ord(chr) + "."
-            res += "-" * ord(chr)
-
-        return res
-
-    def exec(self, interp: Interpreter):
-        print(self.s)
 
 
 @dataclass
@@ -144,3 +127,19 @@ class OUT_N(Instruction):
 
     def exec(self, interp: Interpreter):
         print(chr(interp.tape[interp.dp]))
+
+@dataclass
+class OUT_S(Instruction):
+    s: str
+
+    def __str__(self):
+        res = ""
+        for chr in self.s:
+            res += "+" * ord(chr) + "."
+            res += "-" * ord(chr)
+
+        return res
+
+    def exec(self, interp: Interpreter):
+        print(self.s)
+
