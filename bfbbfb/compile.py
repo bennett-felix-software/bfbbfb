@@ -283,6 +283,9 @@ def EMIT_HEADER(arch, tape_size):
     dp = REGS[arch]["dp"]
     return OUT_S({
         "x86": f"""\
+global _start
+section .text
+_start:
     mov {dp}, rsp
     mov rcx, {tape_size // 8 + 1}
 .clear_stack:
