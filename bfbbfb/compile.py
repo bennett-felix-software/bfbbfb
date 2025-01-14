@@ -1,5 +1,4 @@
-import sys
-from bfbbfb.dsl import ADD, LOOP, MOV, SHF, IN, OUT
+from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT, SHF
 
 # !! Stack Structure !!
 #
@@ -77,6 +76,7 @@ def pop_from_stack():
         SHF(-1),   # move bcak into stack temp
     ]
 
+
 def IF_EQ_THEN(comp, *instr):
     """
     STARTS AT  program input (1)
@@ -102,31 +102,56 @@ def IF_EQ_THEN(comp, *instr):
         ADD(ord(comp)) # restore original program input
     ]
 
-idp = {
-    "x86": "ADD r12, 1\n",
-    "arm": "ADDI X19, X19, #1\n",
-    "bf": ">"
-}
-def EMIT_INCREMENT_DP():
-    global arch, idp
-    return OUT(idp[arch])
 
-ddp = {
-    "x86": "SUB r12, 1\n",
-    "arm": "SUBI X19, X19, #1\n",
-    "bf": "<"
+REGS = {
+    "x86": {"dp": "r12", "ip": "r13"},
+    "arm": {"dp": "X19", "ip": "X20 CHECK THAT YOU CAN ACTUALLY USE THIS REGISTER"},
 }
+
+
+def EMIT_INCREMENT_DP(arch):
+    dp = REGS[arch]["dp"]
+    return OUT(
+        {
+            "x86": f"ADD {dp}, 1\n",
+            "arm": f"ADDI {dp}, {dp}, #1\n",
+            "bf": ">",
+        }[arch]
+    )
+
+
 def EMIT_DECREMENT_DP(arch):
-    global idp
-    return OUT(idp[arch])
+    dp = REGS[arch]["dp"]
+    return OUT(
+        {
+            "x86": f"SUB {dp}, 1\n",
+            "arm": f"SUBI {dp}, {dp}, #1\n",
+            "bf": "<",
+        }[arch]
+    )
 
-it = {}
+
 def EMIT_INCREMENT_TAPE(arch):
-    return []
+    ip = REGS[arch]["ip"]
+    return OUT(
+        {
+            "x86": f"ADD {ip}, 1\n",
+            "arm": f"ADDI {ip}, {ip}, #1\n",
+            "bf": "+",
+        }[arch]
+    )
 
-dt = {}
+
 def EMIT_DECREMENT_TAPE(arch):
-    return []
+    ip = REGS[arch]["ip"]
+    return OUT(
+        {
+            "x86": f"SUB {ip}, 1\n",
+            "arm": f"SUBI {ip}, {ip}, #1\n",
+            "bf": "+",
+        }[arch]
+    )
+
 
 out = {}
 def EMIT_OUTPUT(arch):
@@ -164,5 +189,3 @@ def compile(arch):
             IF_EQ_THEN("]", *END_LOOP(arch)),
         ),
     ]
-
-
