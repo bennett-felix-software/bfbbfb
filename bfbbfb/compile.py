@@ -217,26 +217,35 @@ def EMIT_DECREMENT_DP(arch):
         }[arch]
     )
 
+def cell_width_to_addr_mode(cell_width):
+    match cell_width:
+        case 1:
+            return "byte"
+        case 2:
+            return  "word"
+        case 4:
+            return "dword"
+        case 8:
+            return "qword"
 
-#### FIX FIX FIX NO IP
-def EMIT_INCREMENT_TAPE(arch):
-    ip = REGS[arch]["ip"]
+
+def EMIT_INCREMENT_TAPE(arch, cell_width):
+    dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"ADD {ip}, 1\n",
-            "arm": f"ADDI {ip}, {ip}, #1\n",
+            "x86": f"ADD {cell_width_to_addr_mode(cell_width)} ptr [rsp+{dp}], 1\n",
+            "arm": "unimplemented",
             "bf": "+",
         }[arch]
     )
 
 
-#### FIX FIX FIX NO IP
-def EMIT_DECREMENT_TAPE(arch):
-    ip = REGS[arch]["ip"]
+def EMIT_DECREMENT_TAPE(arch, cell_width):
+    dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"SUB {ip}, 1\n",
-            "arm": f"SUBI {ip}, {ip}, #1\n",
+            "x86": f"SUB {cell_width_to_addr_mode(cell_width)} ptr [rsp+{dp}], 1\n",
+            "arm": "unimplemented",
             "bf": "+",
         }[arch]
     )
