@@ -52,7 +52,7 @@ def test_loop():
     assert dsl.dp == 0
 
 def test_out_n(capsys):
-    i = BFInterpreter([97, 3, 0, 0])
+    i = BFInterpreter(set_tape=[97, 3, 0, 0])
     i.exec(OUT_N(0, 1, 2, 3))
 
     assert i.tape == [97, 3, 0, 0]
@@ -62,9 +62,12 @@ def test_out_n(capsys):
     assert captured.out == "aaa"
 
 def test_out_s(capsys):
-    i = BFInterpreter([0])
+    i = BFInterpreter(set_tape=[0])
     i.exec(OUT_S("hello"))
 
     captured = capsys.readouterr()
     assert captured.out == "hello"
+    assert i.tape == [0]
+    assert i.dp == 0
+    
     

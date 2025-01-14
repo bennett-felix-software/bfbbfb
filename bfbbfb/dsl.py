@@ -134,10 +134,13 @@ class OUT_S(Instruction):
 
     def __str__(self):
         res = ""
+        cur = 0
         for chr in self.s:
-            res += "+" * ord(chr) + "."
-            res += "-" * ord(chr)
+            diff = ord(chr) - cur
+            res += str(ADD(diff)) + "."
+            cur = ord(chr)
 
+        res += str(ADD(-cur))
         return res
 
     def exec(self, interp: Interpreter):
