@@ -15,9 +15,8 @@ class Instruction(ABC):
 
 
 @dataclass
-class OUT(Instruction):
+class OUT_S(Instruction):
     s: str
-    repeat: int = 1
 
     def __str__(self):
         res = ""
@@ -25,10 +24,10 @@ class OUT(Instruction):
             res += "+" * ord(chr) + "."
             res += "-" * ord(chr)
 
-        return res * self.repeat
+        return res
 
     def exec(self, interp: Interpreter):
-        print(self.s * self.repeat)
+        print(self.s)
 
 
 @dataclass
@@ -123,3 +122,25 @@ class IN(Instruction):
     def exec(self, interp: Interpreter):
         interp.tape[interp.dp] = ord(interp.input[interp.itp])
         interp.itp += 1
+
+@dataclass
+class OUT_N(Instruction):
+    src: int
+    n: int
+    tmp1: int
+    tmp2: int
+
+    def __str__(self):
+        COPY(self.n, self.tmp2, self.tmp1)
+        
+        to_src = str(SHF(self.src - self.tmp1))
+        from_src  = str(SHF(self.tmp1 - self.src))
+        return str(COPY(self.n, self.tmp2, self.tmp1)) \
+            + str(SHF(self.tmp1)) \
+            + f"[-{to_src}.{from_src}]" \
+            + str(SHF(-self.tmp1))
+        
+        return 
+
+    def exec(self, interp: Interpreter):
+        print(chr(interp.tape[interp.dp]))

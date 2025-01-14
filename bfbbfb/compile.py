@@ -1,4 +1,4 @@
-from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT, SHF, ZERO, COPY
+from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT_S, SHF, ZERO, COPY
 
 # !! Stack Structure !!
 #
@@ -80,6 +80,7 @@ def if_eq_then(comp, *instr):
     """
     STARTS AT  program input (1)
     USES       tmp1 (2), tmp2 (3)
+    *instr must start at 0 and end at 0
     """
     return [
         ADD(-ord(comp)), # subtract to maybe zero
@@ -114,7 +115,7 @@ REGS = {
 
 def EMIT_INCREMENT_DP(arch):
     dp = REGS[arch]["dp"]
-    return OUT(
+    return OUT_S(
         {
             "x86": f"ADD {dp}, 1\n",
             "arm": f"ADDI {dp}, {dp}, #1\n",
@@ -125,7 +126,7 @@ def EMIT_INCREMENT_DP(arch):
 
 def EMIT_DECREMENT_DP(arch):
     dp = REGS[arch]["dp"]
-    return OUT(
+    return OUT_S(
         {
             "x86": f"SUB {dp}, 1\n",
             "arm": f"SUBI {dp}, {dp}, #1\n",
@@ -136,7 +137,7 @@ def EMIT_DECREMENT_DP(arch):
 
 def EMIT_INCREMENT_TAPE(arch):
     ip = REGS[arch]["ip"]
-    return OUT(
+    return OUT_S(
         {
             "x86": f"ADD {ip}, 1\n",
             "arm": f"ADDI {ip}, {ip}, #1\n",
@@ -147,7 +148,7 @@ def EMIT_INCREMENT_TAPE(arch):
 
 def EMIT_DECREMENT_TAPE(arch):
     ip = REGS[arch]["ip"]
-    return OUT(
+    return OUT_S(
         {
             "x86": f"SUB {ip}, 1\n",
             "arm": f"SUBI {ip}, {ip}, #1\n",
