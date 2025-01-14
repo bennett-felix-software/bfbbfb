@@ -36,7 +36,8 @@ def run():
                     print(f"bfbbfb: error: file not found: {namespace.program}")
                     exit(1)
 
-            i = BFInterpreter(tape_size=namespace.length, cell_size=namespace.width)
+            
+            i = BFInterpreter(tape_size=namespace.length, cell_size=namespace.width, real_stdin=True)
             i.exec(bf)
 
             if namespace.print_tape != -1:

@@ -1,3 +1,5 @@
+import sys
+
 class Interpreter:
     def __init__(
         self,
@@ -43,6 +45,10 @@ class DSLInterpreter(Interpreter):
 
 class BFInterpreter(Interpreter):
 
+    def __init__(self, real_stdin=False, **kwargs):
+        self.real_stdin = real_stdin
+        super().__init__(**kwargs)
+
     def exec(self, *program):
         for inst in program:
             if self.debug:
@@ -78,6 +84,9 @@ class BFInterpreter(Interpreter):
                 case ".":
                     print(chr(self.tape[self.dp]), end="")
                 case ",":
+                    if self.itp >= len(self.input) and self.real_stdin:
+                        self.input += input()
+
                     self.tape[self.dp] = ord(self.input[self.itp])
                     self.itp += 1
                 case "[":
