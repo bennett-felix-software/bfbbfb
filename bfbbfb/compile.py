@@ -141,7 +141,7 @@ def begin_loop(arch):
             ), # at t1
         OUT_S(':\n'), # emit end of label
         OUT_S({
-            "x86": f'    cmp byte [rsp+{dp}], 0\n    je e',
+            "x86": f'    cmp byte [{dp}], 0\n    je e',
             "arm": "unimplemented"
         }[arch]),
         SHF(2), # move to t3
