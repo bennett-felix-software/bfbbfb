@@ -259,7 +259,8 @@ def EMIT_OUTPUT(arch):
     lea rsi, [rsp+{dp}] ; buf   = tape[dp]
     mov rdx, 1           ; count = 1
     mov rax, 1           ; call  = sys_write
-    syscall""",
+    syscall
+""",
         "arm": "unimplemented",
         "bf": "."
     }[arch])
@@ -272,7 +273,8 @@ def EMIT_INPUT(arch):
     lea rsi, [rsp+{dp}] ; buf   = tape[dp]
     mov rdx, 1           ; count = 1
     mov rax, 0           ; call  = sys_read
-    syscall""",
+    syscall
+""",
         "arm": "unimplemented",
         "bf": ","
     }[arch])
