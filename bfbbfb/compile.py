@@ -242,21 +242,33 @@ def EMIT_DECREMENT_TAPE(arch):
     )
 
 
-out = {}
 def EMIT_OUTPUT(arch):
-    return []
+    dp = REGS[arch]["dp"]
+    sp = REGS[arch]["sp"]
+    return OUT_S({
+        "x86": f"""\
+    mov rdi, 1           ; fd    = stdout
+    lea rsi, [{sp}+{dp}] ; buf   = tape[dp]
+    mov rdx, 1           ; count = 1
+    mov rax, 1           ; call  = sys_write
+    syscall""",
+        "arm": "unimplemented",
+        "bf": "."
+    }[arch])
 
-inp = {}
 def EMIT_INPUT(arch):
-    return []
-
-bloop = {}
-def BEGIN_LOOP(arch):
-    return []
-
-eloop = {}
-def END_LOOP(arch):
-    return []
+    dp = REGS[arch]["dp"]
+    sp = REGS[arch]["sp"]
+    return OUT_S({
+        "x86": f"""\
+    mov rdi, 0           ; fd    = stdin
+    lea rsi, [{sp}+{dp}] ; buf   = tape[dp]
+    mov rdx, 1           ; count = 1
+    mov rax, 0           ; call  = sys_read
+    syscall""",
+        "arm": "unimplemented",
+        "bf": ","
+    }[arch])
 
 header = {}
 def EMIT_HEADER(arch):
@@ -274,7 +286,7 @@ def compile(arch):
             *if_eq_then("-", EMIT_DECREMENT_TAPE(arch)),
             *if_eq_then(".", EMIT_OUTPUT(arch)),
             *if_eq_then(",", EMIT_INPUT(arch)),
-            *if_eq_then("[", *BEGIN_LOOP(arch)),
-            *if_eq_then("]", *END_LOOP(arch)),
+            *if_eq_then("[", *begin_loop(arch)),
+            *if_eq_then("]", *end_loop(arch)),
         ),
     ]
