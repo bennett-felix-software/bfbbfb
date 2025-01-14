@@ -274,14 +274,14 @@ header = {}
 def EMIT_HEADER(arch):
     return []
 
-def compile(arch):
+def compile(arch, tape_size, cell_width):
     return [
-        *EMIT_HEADER(arch),
+        *EMIT_HEADER(arch, tape_size),
         SHF(1), # move to program_in
         IN(),   # get in
         LOOP(   # main loop, switch on all possible inputs
-            *if_eq_then(">", EMIT_INCREMENT_DP(arch)),
-            *if_eq_then("<", EMIT_DECREMENT_DP(arch)),
+            *if_eq_then(">", EMIT_INCREMENT_DP(arch, cell_width)),
+            *if_eq_then("<", EMIT_DECREMENT_DP(arch, cell_width)),
             *if_eq_then("+", EMIT_INCREMENT_TAPE(arch)),
             *if_eq_then("-", EMIT_DECREMENT_TAPE(arch)),
             *if_eq_then(".", EMIT_OUTPUT(arch)),
