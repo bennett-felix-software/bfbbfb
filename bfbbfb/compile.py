@@ -1,5 +1,10 @@
 from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT_S, SHF, ZERO, COPY
 
+REGS = {
+    "x86": {"dp": "r12", "ip": "r13", "sp": "rsp"},
+    "arm": {"dp": "X19", "ip": "X20 CHECK", "sp": "sp"},
+}
+
 # !! Stack Structure !!
 #
 # We use a stack in the compiler to keep track of labels so we can compile
@@ -106,12 +111,17 @@ def if_eq_then(comp, *instr):
         ADD(ord(comp)) # restore original program input
     ]
 
-def begin_loop():
+def begin_loop(arch):
     """
     STARTS AT 0
     USES      tmp1, tmp2
     ENDS AT   0
     """
+    if arch == "bf":
+        return "["
+
+    dp = REGS[arch]["dp"]
+    sp = REGS[arch]["sp"]
     return [
         SHF(5), # go to global parenthesis index
         ADD(1), # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
@@ -119,7 +129,8 @@ def begin_loop():
         SHF(1), # move to stack temp, as per add_to_stack calling convention
         *add_to_stack(), # add it to the stack
         SHF(-1), # move back to global parenthesis index
-        COPY(0,-2, -3), # copy index into t1
+        COPY(0, -2, -3), # copy index into t1
+        COPY(0, -2, -1), # copy index into t3
         SHF(-2), # move to t2
         OUT_S('s'), # emit start of label
         SHF(-1), # move to t1
@@ -128,16 +139,63 @@ def begin_loop():
              OUT_S('a'), # emit a
              SHF(-1), # move back into t1
              ADD(-1), # decrement t1
-            ),
-        OUT_S(':'), # emit end of label
-        OUT_S('\n'), # emit end of label
-        SHF(-2) # end back at index 0
+            ), # at t1
+        OUT_S(':\n'), # emit end of label
+        OUT_S({
+            "x86": f'    cmp byte ptr [{sp}+{dp}], 0\n    je e',
+            "arm": "unimplemented"
+        }[arch]),
+        SHF(2), # move to t3
+        LOOP( # emit a's until t3 is 0
+            SHF(-1), # move back into t2
+            OUT_S('a'), # emit a
+            SHF(1), # move back to t3
+             ADD(-1), # decrement t3
+        ), # at t3
+        OUT_S('\n'), # move to next line
+        SHF(-4) # end back at index 0
     ]
 
-REGS = {
-    "x86": {"dp": "r12", "ip": "r13"},
-    "arm": {"dp": "X19", "ip": "X20 CHECK THAT YOU CAN ACTUALLY USE THIS REGISTER"},
-}
+def end_loop(arch):
+    """
+    STARTS AT 0
+    USES      tmp1, tmp2
+    ENDS AT   0
+    """
+    if arch == "bf":
+        return "]"
+
+    dp = REGS[arch]["dp"]
+    sp = REGS[arch]["sp"]
+    return [
+        SHF(6), # go to stack temp
+        *pop_from_stack(), # pop from the stack
+        COPY(0, -3, -2), # copy val into t3
+        MOV(0, -4), # move val into t1
+        SHF(-3), # move to t2
+        OUT_S('e'), # emit start of label
+        SHF(-1), # move to t1
+        LOOP( # emit a's until t1 is 0
+             SHF(1), # move back into t2
+             OUT_S('a'), # emit a
+             SHF(-1), # move back into t1
+             ADD(-1), # decrement t1
+            ), # at t1
+        OUT_S(':\n'), # emit end of label
+        OUT_S({
+            "x86": f"    cmp byte ptr [{sp}+{dp}], 0\n    jne s",
+            "arm": "unimplemented"
+        }[arch]),
+        SHF(2), # move to t3
+        LOOP( # emit a's until t3 is 0
+            SHF(-1), # move back into t2
+            OUT_S('a'), # emit a
+            SHF(1), # move back to t3
+             ADD(-1), # decrement t3
+        ), # at t3
+        OUT_S('\n'), # move to next line
+        SHF(-4) # end back at index 0
+    ]
 
 
 def EMIT_INCREMENT_DP(arch):

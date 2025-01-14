@@ -3,7 +3,8 @@ from bfbbfb.compile import (
     add_to_stack,
     pop_from_stack,
     if_eq_then,
-    begin_loop
+    begin_loop,
+    end_loop,
 )
 from bfbbfb.dsl import ADD, COPY, SHF, ZERO, IN
 from bfbbfb.interpreter import (
@@ -121,14 +122,55 @@ def test_if_eq_then():
 
 def test_begin_loop(capsys):
     i = DSLInterpreter(get_init_tape(5), "b")
-    i.exec(*begin_loop())
-    i.exec(*begin_loop())
-    i.exec(*begin_loop())
-
+    i.exec(*begin_loop("x86"))
+    i.exec(*begin_loop("x86"))
+    i.exec(*begin_loop("x86"))
 
     assert i.dp == 0
     captured = capsys.readouterr()
-    assert "sa:\nsaa:\nsaaa:\n" == captured.out
+    assert '''\
+sa:
+    cmp byte ptr [rsp+r12], 0
+    je ea
+saa:
+    cmp byte ptr [rsp+r12], 0
+    je eaa
+saaa:
+    cmp byte ptr [rsp+r12], 0
+    je eaaa
+''' == captured.out
 
 
-    
+def test_end_loop(capsys):
+    i = DSLInterpreter(get_init_tape(10), "b",
+                       # debug=True
+                       )
+    i.exec(*begin_loop("x86"))
+    i.exec(*begin_loop("x86"))
+    i.exec(*begin_loop("x86"))
+    i.exec(*end_loop("x86"))
+    i.exec(*end_loop("x86"))
+    i.exec(*end_loop("x86"))
+
+    assert i.dp == 0
+    captured = capsys.readouterr()
+    assert '''\
+sa:
+    cmp byte ptr [rsp+r12], 0
+    je ea
+saa:
+    cmp byte ptr [rsp+r12], 0
+    je eaa
+saaa:
+    cmp byte ptr [rsp+r12], 0
+    je eaaa
+eaaa:
+    cmp byte ptr [rsp+r12], 0
+    jne saaa
+eaa:
+    cmp byte ptr [rsp+r12], 0
+    jne saa
+ea:
+    cmp byte ptr [rsp+r12], 0
+    jne sa
+'''== captured.out
