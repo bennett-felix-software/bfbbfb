@@ -1,8 +1,8 @@
 from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT_S, SHF, ZERO, COPY
 
 REGS = {
-    "x86": {"dp": "r12", "ip": "r13", "sp": "rsp"},
-    "arm": {"dp": "X19", "ip": "X20 CHECK", "sp": "sp"},
+    "x86": {"dp": "r12"},
+    "arm": {"dp": "X19"},
 }
 
 # !! Stack Structure !!
@@ -121,7 +121,6 @@ def begin_loop(arch):
         return "["
 
     dp = REGS[arch]["dp"]
-    sp = REGS[arch]["sp"]
     return [
         SHF(5), # go to global parenthesis index
         ADD(1), # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
@@ -142,7 +141,7 @@ def begin_loop(arch):
             ), # at t1
         OUT_S(':\n'), # emit end of label
         OUT_S({
-            "x86": f'    cmp byte ptr [{sp}+{dp}], 0\n    je e',
+            "x86": f'    cmp byte ptr [rsp+{dp}], 0\n    je e',
             "arm": "unimplemented"
         }[arch]),
         SHF(2), # move to t3
@@ -166,7 +165,6 @@ def end_loop(arch):
         return "]"
 
     dp = REGS[arch]["dp"]
-    sp = REGS[arch]["sp"]
     return [
         SHF(6), # go to stack temp
         *pop_from_stack(), # pop from the stack
@@ -183,7 +181,7 @@ def end_loop(arch):
             ), # at t1
         OUT_S(':\n'), # emit end of label
         OUT_S({
-            "x86": f"    cmp byte ptr [{sp}+{dp}], 0\n    jne s",
+            "x86": f"    cmp byte ptr [rsp+{dp}], 0\n    jne s",
             "arm": "unimplemented"
         }[arch]),
         SHF(2), # move to t3
@@ -220,6 +218,7 @@ def EMIT_DECREMENT_DP(arch):
     )
 
 
+#### FIX FIX FIX NO IP
 def EMIT_INCREMENT_TAPE(arch):
     ip = REGS[arch]["ip"]
     return OUT_S(
@@ -231,6 +230,7 @@ def EMIT_INCREMENT_TAPE(arch):
     )
 
 
+#### FIX FIX FIX NO IP
 def EMIT_DECREMENT_TAPE(arch):
     ip = REGS[arch]["ip"]
     return OUT_S(
@@ -244,11 +244,10 @@ def EMIT_DECREMENT_TAPE(arch):
 
 def EMIT_OUTPUT(arch):
     dp = REGS[arch]["dp"]
-    sp = REGS[arch]["sp"]
     return OUT_S({
         "x86": f"""\
     mov rdi, 1           ; fd    = stdout
-    lea rsi, [{sp}+{dp}] ; buf   = tape[dp]
+    lea rsi, [rsp+{dp}] ; buf   = tape[dp]
     mov rdx, 1           ; count = 1
     mov rax, 1           ; call  = sys_write
     syscall""",
@@ -258,11 +257,10 @@ def EMIT_OUTPUT(arch):
 
 def EMIT_INPUT(arch):
     dp = REGS[arch]["dp"]
-    sp = REGS[arch]["sp"]
     return OUT_S({
         "x86": f"""\
     mov rdi, 0           ; fd    = stdin
-    lea rsi, [{sp}+{dp}] ; buf   = tape[dp]
+    lea rsi, [rsp+{dp}] ; buf   = tape[dp]
     mov rdx, 1           ; count = 1
     mov rax, 0           ; call  = sys_read
     syscall""",
@@ -272,7 +270,21 @@ def EMIT_INPUT(arch):
 
 header = {}
 def EMIT_HEADER(arch):
-    return []
+    dp = REGS[arch]["sp"]
+    return OUT_S({
+        "x86": f"""\
+    mov {dp}, rsp
+    mov rcx, {30000 // 8 + 1}
+.clear_stack:
+    mov qword ptr [rsp], 0
+    sub rsp, 8
+    dec rcx
+    jnz clear_stack
+.done
+    mov rsp, {dp}
+"""
+    }[arch])
+
 
 def compile(arch, tape_size, cell_width):
     return [
