@@ -268,13 +268,12 @@ def EMIT_INPUT(arch):
         "bf": ","
     }[arch])
 
-header = {}
-def EMIT_HEADER(arch):
+def EMIT_HEADER(arch, tape_size):
     dp = REGS[arch]["sp"]
     return OUT_S({
         "x86": f"""\
     mov {dp}, rsp
-    mov rcx, {30000 // 8 + 1}
+    mov rcx, {tape_size // 8 + 1}
 .clear_stack:
     mov qword ptr [rsp], 0
     sub rsp, 8
