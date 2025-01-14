@@ -294,9 +294,21 @@ def EMIT_HEADER(arch, tape_size):
     }[arch])
 
 
-def compile(arch, tape_size, cell_width):
+def init_stack(stack_size):
+    return [
+        SHF(7),
+        *[
+            ADD(1),
+            SHF(1),
+        ]*stack_size,
+        SHF(-(stack_size + 7)),
+    ]
+    
+
+def compile(arch, tape_size, cell_width, stack_size):
     return [
         EMIT_HEADER(arch, tape_size),
+        *init_stack(stack_size),
         SHF(1), # move to program_in
         IN(),   # get in
         LOOP(   # main loop, switch on all possible inputs

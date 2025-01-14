@@ -85,10 +85,12 @@ class BFInterpreter(Interpreter):
                     print(chr(self.tape[self.dp]), end="")
                 case ",":
                     if self.itp >= len(self.input) and self.real_stdin:
-                        self.input += input()
-
-                    self.tape[self.dp] = ord(self.input[self.itp])
-                    self.itp += 1
+                        self.input += sys.stdin.readline()
+                    if self.itp >= len(self.input):
+                        self.tape[self.dp] = 0
+                    else:
+                        self.tape[self.dp] = ord(self.input[self.itp])
+                        self.itp += 1
                 case "[":
                     if not self.tape[self.dp]:
                         ip = jump_table[ip]

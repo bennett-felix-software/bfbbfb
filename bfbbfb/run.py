@@ -29,6 +29,7 @@ def run():
 
     compile_parser.add_argument(*width_args, **width_kwargs)
     compile_parser.add_argument(*length_args, **length_kwargs)
+    compile_parser.add_argument("--stack", type=int, default=255, help="size of compiler's stack, bounded by 2^(cell_width*8)")
     compile_parser.add_argument("arch", choices=["x86", "arm", "bf"], help="target cpu architecture for emitted compiler to compile to")
 
     namespace = parser.parse_args(sys.argv[1:])
@@ -51,5 +52,5 @@ def run():
                 i.disp(namespace.print_tape)
             
         case "compile":
-            print("".join(map(str, compile(namespace.arch, namespace.length, namespace.width))))
+            print("".join(map(str, compile(namespace.arch, namespace.length, namespace.width, namespace.stack))))
 
