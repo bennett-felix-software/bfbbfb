@@ -38,7 +38,7 @@ def run():
             if namespace.file:
                 try:
                     with open(namespace.program, "r") as f:
-                        bf = f.open()
+                        bf = f.read()
                 except FileNotFoundError:
                     print(f"bfbbfb: error: file not found: {namespace.program}")
                     exit(1)
@@ -51,5 +51,5 @@ def run():
                 i.disp(namespace.print_tape)
             
         case "compile":
-            print("".join(map(str, compile(namespace.arch))))
+            print("".join(map(str, compile(namespace.arch, namespace.length, namespace.width))))
 

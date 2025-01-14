@@ -278,7 +278,7 @@ def EMIT_INPUT(arch):
     }[arch])
 
 def EMIT_HEADER(arch, tape_size):
-    dp = REGS[arch]["sp"]
+    dp = REGS[arch]["dp"]
     return OUT_S({
         "x86": f"""\
     mov {dp}, rsp
@@ -287,8 +287,8 @@ def EMIT_HEADER(arch, tape_size):
     mov qword ptr [rsp], 0
     sub rsp, 8
     dec rcx
-    jnz clear_stack
-.done
+    jnz .clear_stack
+.done:
     mov rsp, {dp}
 """
     }[arch])
@@ -296,14 +296,14 @@ def EMIT_HEADER(arch, tape_size):
 
 def compile(arch, tape_size, cell_width):
     return [
-        *EMIT_HEADER(arch, tape_size),
+        EMIT_HEADER(arch, tape_size),
         SHF(1), # move to program_in
         IN(),   # get in
         LOOP(   # main loop, switch on all possible inputs
-            *if_eq_then(">", EMIT_INCREMENT_DP(arch, cell_width)),
-            *if_eq_then("<", EMIT_DECREMENT_DP(arch, cell_width)),
-            *if_eq_then("+", EMIT_INCREMENT_TAPE(arch)),
-            *if_eq_then("-", EMIT_DECREMENT_TAPE(arch)),
+            *if_eq_then(">", EMIT_INCREMENT_DP(arch)),
+            *if_eq_then("<", EMIT_DECREMENT_DP(arch)),
+            *if_eq_then("+", EMIT_INCREMENT_TAPE(arch, cell_width)),
+            *if_eq_then("-", EMIT_DECREMENT_TAPE(arch, cell_width)),
             *if_eq_then(".", EMIT_OUTPUT(arch)),
             *if_eq_then(",", EMIT_INPUT(arch)),
             *if_eq_then("[", *begin_loop(arch)),
