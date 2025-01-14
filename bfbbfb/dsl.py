@@ -126,7 +126,7 @@ class OUT_N(Instruction):
         return 
 
     def exec(self, interp: Interpreter):
-        print(chr(interp.tape[interp.dp]))
+        print(chr(interp.tape[interp.dp]), end="")
 
 @dataclass
 class OUT_S(Instruction):
@@ -141,5 +141,5 @@ class OUT_S(Instruction):
         return res
 
     def exec(self, interp: Interpreter):
-        print(self.s)
+        print(self.s, end="")
 

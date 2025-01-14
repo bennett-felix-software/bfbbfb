@@ -106,6 +106,33 @@ def if_eq_then(comp, *instr):
         ADD(ord(comp)) # restore original program input
     ]
 
+def begin_loop():
+    """
+    STARTS AT 0
+    USES      tmp1, tmp2
+    ENDS AT   0
+    """
+    return [
+        SHF(5), # go to global parenthesis index
+        ADD(1), # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
+        COPY(0, -3, 1), # copy it to stack temp
+        SHF(1), # move to stack temp, as per add_to_stack calling convention
+        *add_to_stack(), # add it to the stack
+        SHF(-1), # move back to global parenthesis index
+        COPY(0,-2, -3), # copy index into t1
+        SHF(-2), # move to t2
+        OUT_S('s'), # emit start of label
+        SHF(-1), # move to t1
+        LOOP( # emit a's until t1 is 0
+             SHF(1), # move back into t2
+             OUT_S('a'), # emit a
+             SHF(-1), # move back into t1
+             ADD(-1), # decrement t1
+            ),
+        OUT_S(':'), # emit end of label
+        OUT_S('\n'), # emit end of label
+        SHF(-2) # end back at index 0
+    ]
 
 REGS = {
     "x86": {"dp": "r12", "ip": "r13"},

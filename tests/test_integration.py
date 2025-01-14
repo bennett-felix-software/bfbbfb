@@ -3,12 +3,26 @@ from bfbbfb.compile import (
     add_to_stack,
     pop_from_stack,
     if_eq_then,
+    begin_loop
 )
 from bfbbfb.dsl import ADD, COPY, SHF, ZERO, IN
 from bfbbfb.interpreter import (
     DSLInterpreter,
     BFInterpreter,
 )
+
+def get_init_tape(stack_size):
+    return [
+        0, # global 0
+        0, # input
+        0, # t1
+        0, # t2
+        0, # t3
+        0, # global parenthesis index
+        0, # stack temp
+        *[1]*stack_size, # stack
+        0, # stack sentinel
+    ]
 
 
 @pytest.mark.parametrize("stack_size", [4, 1])
@@ -104,5 +118,17 @@ def test_if_eq_then():
 
     assert i.tape == [0, 98, 0, 0, 1, 0]
     assert i.dp == 1
+
+def test_begin_loop(capsys):
+    i = DSLInterpreter(get_init_tape(5), "b")
+    i.exec(*begin_loop())
+    i.exec(*begin_loop())
+    i.exec(*begin_loop())
+
+
+    assert i.dp == 0
+    captured = capsys.readouterr()
+    assert "sa:\nsaa:\nsaaa:\n" == captured.out
+
 
     
