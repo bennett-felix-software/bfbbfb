@@ -40,6 +40,7 @@ class ADD(Instruction):
 
     def exec(self, interp: Interpreter):
         interp.tape[interp.dp] += self.val
+        interp.tape[interp.dp] %= 2**(interp.cell_size*8)
 
 
 @dataclass

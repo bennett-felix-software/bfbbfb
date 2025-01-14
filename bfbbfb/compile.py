@@ -1,4 +1,4 @@
-from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT, SHF
+from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT, SHF, ZERO, COPY
 
 # !! Stack Structure !!
 #
@@ -76,27 +76,30 @@ def pop_from_stack():
         SHF(-1),   # move bcak into stack temp
     ]
 
-
-def IF_EQ_THEN(comp, *instr):
+def if_eq_then(comp, *instr):
     """
     STARTS AT  program input (1)
-    USES       tmp1 (2)
+    USES       tmp1 (2), tmp2 (3)
     """
     return [
         ADD(-ord(comp)), # subtract to maybe zero
         # if it's not zero, subtract 1 from tmp1 (tmp2 is zero)
+        COPY(0, 1, 2), # save value in temp2
         LOOP(
             SHF(1),
             ADD(-1),
-            SHF(1),
+            SHF(-1),
+            ZERO()
         ),
+        MOV(2, 0),
         # add 1 to tmp1, it will now be 1 if eq, 0 if not
-        SHF(-1),
+        SHF(1),
         ADD(1),
+        MOV(0, -2), # move into 0
+        SHF(-2),        # go to 0
         LOOP(
-            ADD(-1),
-            SHF(-2), # go to 0
-            *instr
+            ZERO(),
+            *instr   # instruction must start and end at 0
         ),
         SHF(1), # go back to program input
         ADD(ord(comp)) # restore original program input
@@ -179,13 +182,13 @@ def compile(arch):
         SHF(1), # move to program_in
         IN(),   # get in
         LOOP(   # main loop, switch on all possible inputs
-            IF_EQ_THEN(">", EMIT_INCREMENT_DP(arch)),
-            IF_EQ_THEN("<", EMIT_DECREMENT_DP(arch)),
-            IF_EQ_THEN("+", EMIT_INCREMENT_TAPE(arch)),
-            IF_EQ_THEN("-", EMIT_DECREMENT_TAPE(arch)),
-            IF_EQ_THEN(".", EMIT_OUTPUT(arch)),
-            IF_EQ_THEN(",", EMIT_INPUT(arch)),
-            IF_EQ_THEN("[", *BEGIN_LOOP(arch)),
-            IF_EQ_THEN("]", *END_LOOP(arch)),
+            if_eq_then(">", EMIT_INCREMENT_DP(arch)),
+            if_eq_then("<", EMIT_DECREMENT_DP(arch)),
+            if_eq_then("+", EMIT_INCREMENT_TAPE(arch)),
+            if_eq_then("-", EMIT_DECREMENT_TAPE(arch)),
+            if_eq_then(".", EMIT_OUTPUT(arch)),
+            if_eq_then(",", EMIT_INPUT(arch)),
+            if_eq_then("[", *BEGIN_LOOP(arch)),
+            if_eq_then("]", *END_LOOP(arch)),
         ),
     ]

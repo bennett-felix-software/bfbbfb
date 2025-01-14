@@ -1,6 +1,10 @@
 import pytest
-from bfbbfb.compile import add_to_stack, pop_from_stack
-from bfbbfb.dsl import ADD, COPY, SHF, ZERO
+from bfbbfb.compile import (
+    add_to_stack,
+    pop_from_stack,
+    if_eq_then,
+)
+from bfbbfb.dsl import ADD, COPY, SHF, ZERO, IN
 from bfbbfb.interpreter import (
     DSLInterpreter,
     BFInterpreter,
@@ -83,3 +87,22 @@ def test_stack_complex(interp):
     i.exec(ZERO())  # zero out for good luck
     assert i.tape == [0, 4, 0, 1, 1, 1, 0]
     assert i.dp == 2
+
+
+def test_if_eq_then():
+    i = DSLInterpreter([0, 0, 0, 0, 1, 1], "b", debug=True)
+    i.exec(SHF(1), IN())
+    assert i.tape == [0, 98, 0, 0, 1, 1]
+    assert i.dp == 1
+
+    i.exec(*if_eq_then("a", SHF(4), ZERO(), SHF(-4)))
+
+    assert i.tape == [0, 98, 0, 0, 1, 1]
+    assert i.dp == 1
+
+    i.exec(*if_eq_then("b", SHF(5), ZERO(), SHF(-5)))
+
+    assert i.tape == [0, 98, 0, 0, 1, 0]
+    assert i.dp == 1
+
+    

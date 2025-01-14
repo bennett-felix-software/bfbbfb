@@ -15,7 +15,7 @@ class Interpreter:
 
         self.debug = debug
         self.cell_size = cell_size
-        self.input = input
+        self.input = set_input
 
         self.dp = 0
         self.itp = 0
@@ -71,8 +71,10 @@ class BFInterpreter(Interpreter):
                     self.dp -= 1
                 case "+":
                     self.tape[self.dp] += 1
+                    self.tape[self.dp] %= 2**(self.cell_size*8)
                 case "-":
                     self.tape[self.dp] -= 1
+                    self.tape[self.dp] %= 2**(self.cell_size*8)
                 case ".":
                     print(self.tape[self.dp], end="")
                 case ",":
