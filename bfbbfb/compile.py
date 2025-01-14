@@ -181,7 +181,7 @@ def end_loop(arch):
             ), # at t1
         OUT_S(':\n'), # emit end of label
         OUT_S({
-            "x86": f"    cmp byte [rsp+{dp}], 0\n    jne s",
+            "x86": f"    cmp byte [{dp}], 0\n    jne s",
             "arm": "unimplemented"
         }[arch]),
         SHF(2), # move to t3
@@ -200,8 +200,8 @@ def EMIT_INCREMENT_DP(arch):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"ADD {dp}, 1\n",
-            "arm": f"ADDI {dp}, {dp}, #1\n",
+            "x86": f"    ADD {dp}, 1\n",
+            "arm": f"    ADDI {dp}, {dp}, #1\n",
             "bf": ">",
         }[arch]
     )
@@ -211,8 +211,8 @@ def EMIT_DECREMENT_DP(arch):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"SUB {dp}, 1\n",
-            "arm": f"SUBI {dp}, {dp}, #1\n",
+            "x86": f"    SUB {dp}, 1\n",
+            "arm": f"    SUBI {dp}, {dp}, #1\n",
             "bf": "<",
         }[arch]
     )
@@ -233,7 +233,7 @@ def EMIT_INCREMENT_TAPE(arch, cell_width):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"ADD {cell_width_to_addr_mode(cell_width)} [rsp+{dp}], 1\n",
+            "x86": f"    ADD {cell_width_to_addr_mode(cell_width)} [{dp}], 1\n",
             "arm": "unimplemented",
             "bf": "+",
         }[arch]
@@ -244,7 +244,7 @@ def EMIT_DECREMENT_TAPE(arch, cell_width):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"SUB {cell_width_to_addr_mode(cell_width)} [rsp+{dp}], 1\n",
+            "x86": f"    SUB {cell_width_to_addr_mode(cell_width)} [{dp}], 1\n",
             "arm": "unimplemented",
             "bf": "+",
         }[arch]
@@ -256,7 +256,7 @@ def EMIT_OUTPUT(arch):
     return OUT_S({
         "x86": f"""\
     mov rdi, 1           ; fd    = stdout
-    lea rsi, [rsp+{dp}] ; buf   = tape[dp]
+    lea rsi, [{dp}] ; buf   = tape[dp]
     mov rdx, 1           ; count = 1
     mov rax, 1           ; call  = sys_write
     syscall
@@ -270,7 +270,7 @@ def EMIT_INPUT(arch):
     return OUT_S({
         "x86": f"""\
     mov rdi, 0           ; fd    = stdin
-    lea rsi, [rsp+{dp}] ; buf   = tape[dp]
+    lea rsi, [{dp}] ; buf   = tape[dp]
     mov rdx, 1           ; count = 1
     mov rax, 0           ; call  = sys_read
     syscall
