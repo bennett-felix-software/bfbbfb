@@ -16,13 +16,20 @@ def run():
     run_parser = subparsers.add_parser("run", help="run brainfuck, either as a string or from a file")
     compile_parser = subparsers.add_parser("compile", help="compile the brainfuck to assembly compiler")
 
-    run_parser.add_argument("-f", "--file", type=bool, default=False, help="treat the program as a file rather than as a brainfuck string")
-    run_parser.add_argument("-w", "--width", type=int, default=1, help="set cell width in bytes")
-    run_parser.add_argument("-l", "--length", type=int, default=30000, help="set tape length")
-    run_parser.add_argument("-p", "--print-tape", type=int, default=-1, help="how many cells of the tape to print when execution is finished")
+    width_args = ["--width"]
+    width_kwargs = {"choices": [1, 2, 4, 8], "default": 1, "help": "set cell width in bytes"}
+    length_args = ["--length"]
+    length_kwargs = {"type": int, "default": 30000, "help": "set tape length"}
+    
+    run_parser.add_argument("--file", action="store_true", help="treat the program as a file rather than as a brainfuck string")
+    run_parser.add_argument(*width_args, **width_kwargs)
+    run_parser.add_argument(*length_args, **length_kwargs)
+    run_parser.add_argument("--print-tape", type=int, default=-1, help="how many cells of the tape to print when execution is finished", metavar="CELLS")
     run_parser.add_argument("program", type=str, help="the program to run")
 
-    compile_parser.add_argument("arch", choices=["x86", "arm"], help="target cpu architecture for emitted compiler to compile to")
+    compile_parser.add_argument(*width_args, **width_kwargs)
+    compile_parser.add_argument(*length_args, **length_kwargs)
+    compile_parser.add_argument("arch", choices=["x86", "arm", "bf"], help="target cpu architecture for emitted compiler to compile to")
 
     namespace = parser.parse_args(sys.argv[1:])
     match namespace.command:
