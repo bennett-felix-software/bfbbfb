@@ -137,11 +137,11 @@ def EMIT_INPUT(arch):
     return []
 
 bloop = {}
-def EMIT_BEGIN_LOOP(arch):
+def BEGIN_LOOP(arch):
     return []
 
 eloop = {}
-def EMIT_END_LOOP(arch):
+def END_LOOP(arch):
     return []
 
 header = {}
