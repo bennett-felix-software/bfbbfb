@@ -141,7 +141,7 @@ def begin_loop(arch):
             ), # at t1
         OUT_S(':\n'), # emit end of label
         OUT_S({
-            "x86": f'    cmp byte ptr [rsp+{dp}], 0\n    je e',
+            "x86": f'    cmp byte [rsp+{dp}], 0\n    je e',
             "arm": "unimplemented"
         }[arch]),
         SHF(2), # move to t3
@@ -181,7 +181,7 @@ def end_loop(arch):
             ), # at t1
         OUT_S(':\n'), # emit end of label
         OUT_S({
-            "x86": f"    cmp byte ptr [rsp+{dp}], 0\n    jne s",
+            "x86": f"    cmp byte [rsp+{dp}], 0\n    jne s",
             "arm": "unimplemented"
         }[arch]),
         SHF(2), # move to t3
@@ -233,7 +233,7 @@ def EMIT_INCREMENT_TAPE(arch, cell_width):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"ADD {cell_width_to_addr_mode(cell_width)} ptr [rsp+{dp}], 1\n",
+            "x86": f"ADD {cell_width_to_addr_mode(cell_width)} [rsp+{dp}], 1\n",
             "arm": "unimplemented",
             "bf": "+",
         }[arch]
@@ -244,7 +244,7 @@ def EMIT_DECREMENT_TAPE(arch, cell_width):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"SUB {cell_width_to_addr_mode(cell_width)} ptr [rsp+{dp}], 1\n",
+            "x86": f"SUB {cell_width_to_addr_mode(cell_width)} [rsp+{dp}], 1\n",
             "arm": "unimplemented",
             "bf": "+",
         }[arch]
@@ -284,7 +284,7 @@ def EMIT_HEADER(arch, tape_size):
     mov {dp}, rsp
     mov rcx, {tape_size // 8 + 1}
 .clear_stack:
-    mov qword ptr [rsp], 0
+    mov qword [rsp], 0
     sub rsp, 8
     dec rcx
     jnz .clear_stack
@@ -308,5 +308,6 @@ def compile(arch, tape_size, cell_width):
             *if_eq_then(",", EMIT_INPUT(arch)),
             *if_eq_then("[", *begin_loop(arch)),
             *if_eq_then("]", *end_loop(arch)),
+            IN(),
         ),
     ]
