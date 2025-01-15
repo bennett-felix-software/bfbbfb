@@ -108,7 +108,7 @@ def if_eq_then(comp, *instr):
     ]
 
 
-def begin_loop(arch):
+def begin_loop(arch, cell_bytes):
     """
     STARTS AT 0
     USES      tmp1, tmp2
@@ -140,7 +140,10 @@ def begin_loop(arch):
         ),  # at t1
         OUT_S(":\n"),  # emit end of label
         OUT_S(
-            {"x86": f"    cmp byte [{dp}], 0\n    je e", "arm": "unimplemented"}[arch]
+            {
+                "x86": f"    cmp {addrmode(cell_bytes)} [{dp}], 0\n    je e",
+                "arm": "unimplemented",
+            }[arch]
         ),
         SHF(2),  # move to t3
         LOOP(  # emit a's until t3 is 0
@@ -154,7 +157,7 @@ def begin_loop(arch):
     ]
 
 
-def end_loop(arch):
+def end_loop(arch, cell_bytes):
     """
     STARTS AT 0
     USES      tmp1, tmp2
@@ -180,7 +183,10 @@ def end_loop(arch):
         ),  # at t1
         OUT_S(":\n"),  # emit end of label
         OUT_S(
-            {"x86": f"    cmp byte [{dp}], 0\n    jne s", "arm": "unimplemented"}[arch]
+            {
+                "x86": f"    cmp {addrmode(cell_bytes)} [{dp}], 0\n    jne s",
+                "arm": "unimplemented",
+            }[arch]
         ),
         SHF(2),  # move to t3
         LOOP(  # emit a's until t3 is 0
@@ -194,29 +200,29 @@ def end_loop(arch):
     ]
 
 
-def EMIT_INCREMENT_DP(arch):
+def EMIT_INCREMENT_DP(arch, cell_bytes):
     dp = DP[arch]
     return OUT_S(
         {
-            "x86": f"    add {dp}, 1\n",
-            "arm": f"    addi {dp}, {dp}, #1\n",
+            "x86": f"    add {dp}, {cell_bytes}\n",
+            "arm": f"    addi {dp}, {dp}, #{cell_bytes}\n",
             "bf": ">",
         }[arch]
     )
 
 
-def EMIT_DECREMENT_DP(arch):
+def EMIT_DECREMENT_DP(arch, cell_bytes):
     dp = DP[arch]
     return OUT_S(
         {
-            "x86": f"    sub {dp}, 1\n",
-            "arm": f"    subi {dp}, {dp}, #1\n",
+            "x86": f"    sub {dp}, {cell_bytes}\n",
+            "arm": f"    subi {dp}, {dp}, #{cell_bytes}\n",
             "bf": "<",
         }[arch]
     )
 
 
-def cell_width_to_addr_mode(cell_bytes):
+def addrmode(cell_bytes):
     match cell_bytes:
         case 1:
             return "byte"
@@ -228,22 +234,22 @@ def cell_width_to_addr_mode(cell_bytes):
             return "qword"
 
 
-def EMIT_INCREMENT_TAPE(arch, cell_width):
+def EMIT_INCREMENT_TAPE(arch, cell_bytes):
     dp = DP[arch]
     return OUT_S(
         {
-            "x86": f"    add {cell_width_to_addr_mode(cell_width)} [{dp}], 1\n",
+            "x86": f"    add {addrmode(cell_bytes)} [{dp}], 1\n",
             "arm": "unimplemented",
             "bf": "+",
         }[arch]
     )
 
 
-def EMIT_DECREMENT_TAPE(arch, cell_width):
+def EMIT_DECREMENT_TAPE(arch, cell_bytes):
     dp = DP[arch]
     return OUT_S(
         {
-            "x86": f"    sub {cell_width_to_addr_mode(cell_width)} [{dp}], 1\n",
+            "x86": f"    sub {addrmode(cell_bytes)} [{dp}], 1\n",
             "arm": "unimplemented",
             "bf": "+",
         }[arch]
@@ -255,10 +261,10 @@ def EMIT_OUTPUT(arch):
     return OUT_S(
         {
             "x86": f"""\
-    mov rdi, 1           ; fd    = stdout
+    mov rdi, 1      ; fd    = stdout
     lea rsi, [{dp}] ; buf   = tape[dp]
-    mov rdx, 1           ; count = 1
-    mov rax, 1           ; call  = sys_write
+    mov rdx, 1      ; count = 1
+    mov rax, 1      ; call  = sys_write
     syscall
 """,
             "arm": "unimplemented",
@@ -272,10 +278,10 @@ def EMIT_INPUT(arch):
     return OUT_S(
         {
             "x86": f"""\
-    mov rdi, 0           ; fd    = stdin
+    mov rdi, 0      ; fd    = stdin
     lea rsi, [{dp}] ; buf   = tape[dp]
-    mov rdx, 1           ; count = 1
-    mov rax, 0           ; call  = sys_read
+    mov rdx, 1      ; count = 1
+    mov rax, 0      ; call  = sys_read
     syscall
 """,
             "arm": "unimplemented",
@@ -294,11 +300,11 @@ section .text
 _start:
     mov {dp}, rsp
     mov rcx, {tape_bytes // 8 + 1}
-.clear_stack:
+.zeroize_stack:
     mov qword [rsp], 0
     sub rsp, 8
     dec rcx
-    jnz .clear_stack
+    jnz .zeroize_stack
 .done:
     mov rsp, {dp}
 """
@@ -325,14 +331,14 @@ def compile(arch, tape_size, cell_bytes, stack_size):
         SHF(1),  # move to program_in
         IN(),  # get in
         LOOP(  # main loop, switch on all possible inputs
-            *if_eq_then(">", EMIT_INCREMENT_DP(arch)),
-            *if_eq_then("<", EMIT_DECREMENT_DP(arch)),
+            *if_eq_then(">", EMIT_INCREMENT_DP(arch, cell_bytes)),
+            *if_eq_then("<", EMIT_DECREMENT_DP(arch, cell_bytes)),
             *if_eq_then("+", EMIT_INCREMENT_TAPE(arch, cell_bytes)),
             *if_eq_then("-", EMIT_DECREMENT_TAPE(arch, cell_bytes)),
             *if_eq_then(".", EMIT_OUTPUT(arch)),
             *if_eq_then(",", EMIT_INPUT(arch)),
-            *if_eq_then("[", *begin_loop(arch)),
-            *if_eq_then("]", *end_loop(arch)),
+            *if_eq_then("[", *begin_loop(arch, cell_bytes)),
+            *if_eq_then("]", *end_loop(arch, cell_bytes)),
             IN(),
         ),
     ]
