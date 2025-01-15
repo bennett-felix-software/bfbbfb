@@ -200,8 +200,8 @@ def EMIT_INCREMENT_DP(arch):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"    ADD {dp}, 1\n",
-            "arm": f"    ADDI {dp}, {dp}, #1\n",
+            "x86": f"    add {dp}, 1\n",
+            "arm": f"    addi {dp}, {dp}, #1\n",
             "bf": ">",
         }[arch]
     )
@@ -211,8 +211,8 @@ def EMIT_DECREMENT_DP(arch):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"    SUB {dp}, 1\n",
-            "arm": f"    SUBI {dp}, {dp}, #1\n",
+            "x86": f"    sub {dp}, 1\n",
+            "arm": f"    subi {dp}, {dp}, #1\n",
             "bf": "<",
         }[arch]
     )
@@ -233,7 +233,7 @@ def EMIT_INCREMENT_TAPE(arch, cell_width):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"    ADD {cell_width_to_addr_mode(cell_width)} [{dp}], 1\n",
+            "x86": f"    add {cell_width_to_addr_mode(cell_width)} [{dp}], 1\n",
             "arm": "unimplemented",
             "bf": "+",
         }[arch]
@@ -244,7 +244,7 @@ def EMIT_DECREMENT_TAPE(arch, cell_width):
     dp = REGS[arch]["dp"]
     return OUT_S(
         {
-            "x86": f"    SUB {cell_width_to_addr_mode(cell_width)} [{dp}], 1\n",
+            "x86": f"    sub {cell_width_to_addr_mode(cell_width)} [{dp}], 1\n",
             "arm": "unimplemented",
             "bf": "+",
         }[arch]
