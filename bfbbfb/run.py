@@ -5,8 +5,6 @@ import types
 import re
 
 from bfbbfb.interpreter import BFInterpreter
-from bfbbfb.compile import compile
-
 
 def run():
     parser = argparse.ArgumentParser(
@@ -30,10 +28,8 @@ def run():
     run_parser.add_argument("--print-tape", type=int, default=-1, help="how many cells of the tape to print when execution is finished", metavar="CELLS")
     run_parser.add_argument("program", type=str, help="the program to run")
 
-    # compile_parser.add_argument(*width_args, **width_kwargs)
-    # compile_parser.add_argument(*length_args, **length_kwargs)
-    # compile_parser.add_argument("--stack", type=int, default=255, help="size of compiler's stack, bounded by 2^(cell_width*8)")
     dsl_parser.add_argument("file", type=str, help="python file containing the DSL you want to compile")
+    dsl_parser.add_argument("--output", action="store_true", help="output directly to terminal rather than writing to a file")
     dsl_parser.add_argument("--show-args", action="store_true", help="to see arguments and defaults for the DSL file you're compiling")
     dsl_parser.add_argument("args", nargs="*")
 
@@ -81,5 +77,11 @@ def run():
                     args.append(arg)
             
             res = mod.compile(*args, **kwargs)
-            print("".join(map(str, res)))
+            output = "".join(map(str, res))
+
+            if namespace.output:
+                print(output)
+            else:
+                with open(next(re.finditer(r"(\w+)\.py$", namespace.file)).group(1)+".bf", "w") as f:
+                    f.write(output)
 

@@ -1,5 +1,5 @@
 import pytest
-from bfbbfb.compile import (
+from compile import (
     add_to_stack,
     pop_from_stack,
     if_eq_then,
@@ -64,6 +64,7 @@ def test_pop_from_stack(stack_size):
 
 @pytest.mark.parametrize("interp", [DSLInterpreter, BFInterpreter])
 def test_stack_complex(interp):
+    BFInterpreter()
     i = interp([0, 1, 0, 1, 1, 1, 0])
     # temp, global stack index, stack in/out, staaaaaaaaaaaaaaack, stack head
     # testing [[][]][], our ancient nemesis
@@ -122,55 +123,53 @@ def test_if_eq_then():
 
 def test_begin_loop(capsys):
     i = DSLInterpreter(get_init_tape(5), "b")
-    i.exec(*begin_loop("x86"))
-    i.exec(*begin_loop("x86"))
-    i.exec(*begin_loop("x86"))
+    i.exec(*begin_loop("x86", 1))
+    i.exec(*begin_loop("x86", 1))
+    i.exec(*begin_loop("x86", 1))
 
     assert i.dp == 0
     captured = capsys.readouterr()
     assert '''\
 sa:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     je ea
 saa:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     je eaa
 saaa:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     je eaaa
 ''' == captured.out
 
 
 def test_end_loop(capsys):
-    i = DSLInterpreter(get_init_tape(10), "b",
-                       # debug=True
-                       )
-    i.exec(*begin_loop("x86"))
-    i.exec(*begin_loop("x86"))
-    i.exec(*begin_loop("x86"))
-    i.exec(*end_loop("x86"))
-    i.exec(*end_loop("x86"))
-    i.exec(*end_loop("x86"))
+    i = DSLInterpreter(get_init_tape(10), "b")
+    i.exec(*begin_loop("x86", 1))
+    i.exec(*begin_loop("x86", 1))
+    i.exec(*begin_loop("x86", 1))
+    i.exec(*end_loop("x86", 1))
+    i.exec(*end_loop("x86", 1))
+    i.exec(*end_loop("x86", 1))
 
     assert i.dp == 0
     captured = capsys.readouterr()
     assert '''\
 sa:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     je ea
 saa:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     je eaa
 saaa:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     je eaaa
 eaaa:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     jne saaa
 eaa:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     jne saa
 ea:
-    cmp byte [rsp+r12], 0
+    cmp byte [r12], 0
     jne sa
 '''== captured.out

@@ -45,9 +45,17 @@ class DSLInterpreter(Interpreter):
 
 class BFInterpreter(Interpreter):
 
-    def __init__(self, real_stdin=False, **kwargs):
+    def __init__(
+        self,
+        set_tape=None,
+        set_input="",
+        tape_size=30000,
+        cell_size=1,
+        debug=False,
+        real_stdin=False,
+    ):
+        super().__init__(set_tape, set_input, tape_size, cell_size, debug)
         self.real_stdin = real_stdin
-        super().__init__(**kwargs)
 
     def exec(self, *program):
         for inst in program:

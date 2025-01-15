@@ -332,9 +332,9 @@ def EMIT_FOOTER(arch):
     syscall"""
     }[arch])
 
-def compile(arch="x86", tape_size="30000", cell_width="1", stack_size="255"):
+def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
     tape_size = int(tape_size)
-    cell_width = int(cell_width)
+    cell_bytes = int(cell_bytes)
     stack_size = int(stack_size)
     return [
         EMIT_HEADER(arch, tape_size * cell_bytes),

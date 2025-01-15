@@ -16,8 +16,8 @@ def assert_parity(
     tape: list[int],
     *PROG: list[Instruction]
 ) -> tuple[DSLInterpreter, BFInterpreter]:
-    dsl = DSLInterpreter(set_tape=[*tape])
-    bf = BFInterpreter(set_tape=[*tape])
+    dsl = DSLInterpreter([*tape])
+    bf = BFInterpreter([*tape])
 
     for instr in PROG:
         dsl.exec(instr)
@@ -52,7 +52,7 @@ def test_loop():
     assert dsl.dp == 0
 
 def test_out_n(capsys):
-    i = BFInterpreter(set_tape=[97, 3, 0, 0])
+    i = BFInterpreter([97, 3, 0, 0])
     i.exec(OUT_N(0, 1, 2, 3))
 
     assert i.tape == [97, 3, 0, 0]
@@ -62,7 +62,7 @@ def test_out_n(capsys):
     assert captured.out == "aaa"
 
 def test_out_s(capsys):
-    i = BFInterpreter(set_tape=[0])
+    i = BFInterpreter([0])
     i.exec(OUT_S("hello"))
 
     captured = capsys.readouterr()
