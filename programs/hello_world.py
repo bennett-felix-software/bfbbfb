@@ -1,7 +1,7 @@
 from bfbbfb.dsl import OUT_S
 
 def compile():
-    return [OUT_S("Hello world!")]
+    return [OUT_S("ab")]
 
 
 if __name__ == "__main__":
