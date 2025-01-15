@@ -118,6 +118,10 @@ def begin_loop(arch, cell_bytes):
         return "["
 
     dp = DP[arch]
+    body = {
+        "x86": f"    cmp {addrmode(cell_bytes)} [{dp}], 0\n    je e",
+        "arm": "unimplemented",
+    }
     return [
         SHF(5),  # go to global parenthesis index
         ADD(
@@ -139,12 +143,7 @@ def begin_loop(arch, cell_bytes):
             ADD(-1),  # decrement t1
         ),  # at t1
         OUT_S(":\n"),  # emit end of label
-        OUT_S(
-            {
-                "x86": f"    cmp {addrmode(cell_bytes)} [{dp}], 0\n    je e",
-                "arm": "unimplemented",
-            }[arch]
-        ),
+        OUT_S(body[arch]),
         SHF(2),  # move to t3
         LOOP(  # emit a's until t3 is 0
             SHF(-1),  # move back into t2
@@ -167,6 +166,10 @@ def end_loop(arch, cell_bytes):
         return "]"
 
     dp = DP[arch]
+    body = {
+        "x86": f"    cmp {addrmode(cell_bytes)} [{dp}], 0\n    jne s",
+        "arm": "unimplemented",
+    }
     return [
         SHF(6),  # go to stack temp
         *pop_from_stack(),  # pop from the stack
@@ -182,12 +185,7 @@ def end_loop(arch, cell_bytes):
             ADD(-1),  # decrement t1
         ),  # at t1
         OUT_S(":\n"),  # emit end of label
-        OUT_S(
-            {
-                "x86": f"    cmp {addrmode(cell_bytes)} [{dp}], 0\n    jne s",
-                "arm": "unimplemented",
-            }[arch]
-        ),
+        OUT_S(body[arch]),
         SHF(2),  # move to t3
         LOOP(  # emit a's until t3 is 0
             SHF(-1),  # move back into t2
@@ -294,20 +292,20 @@ def EMIT_HEADER(arch, tape_bytes):
     dp = DP[arch]
     return OUT_S(
         {
-            "x86": f"""\
-global _start
-section .text
-_start:
-    mov {dp}, rsp
-    mov rcx, {tape_bytes // 8 + 1}
-.zeroize_stack:
-    mov qword [rsp], 0
-    sub rsp, 8
-    dec rcx
-    jnz .zeroize_stack
-.done:
-    mov rsp, {dp}
-"""
+            "x86": textwrap.dedent(f"""\
+                global _start
+                section .text
+                _start:
+                    mov {dp}, rsp
+                    mov rcx, {tape_bytes // 8 + 1}
+                .zeroize_stack:
+                    mov qword [rsp], 0
+                    sub rsp, 8
+                    dec rcx
+                    jnz .zeroize_stack
+                .done:
+                    mov rsp, {dp}
+                """)
         }[arch]
     )
 

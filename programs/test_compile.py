@@ -1,4 +1,5 @@
 import pytest
+import textwrap
 from compile import (
     add_to_stack,
     pop_from_stack,
@@ -131,20 +132,17 @@ def test_begin_loop(capsys):
 
     assert i.dp == 0
     captured = capsys.readouterr()
-    assert (
-        """\
-sa:
-    cmp byte [r12], 0
-    je ea
-saa:
-    cmp byte [r12], 0
-    je eaa
-saaa:
-    cmp byte [r12], 0
-    je eaaa
-"""
-        == captured.out
-    )
+    assert captured.out == textwrap.dedent("""\
+        sa:
+            cmp byte [r12], 0
+            je ea
+        saa:
+            cmp byte [r12], 0
+            je eaa
+        saaa:
+            cmp byte [r12], 0
+            je eaaa
+        """)
 
 
 def test_end_loop(capsys):
@@ -158,26 +156,23 @@ def test_end_loop(capsys):
 
     assert i.dp == 0
     captured = capsys.readouterr()
-    assert (
-        """\
-sa:
-    cmp byte [r12], 0
-    je ea
-saa:
-    cmp byte [r12], 0
-    je eaa
-saaa:
-    cmp byte [r12], 0
-    je eaaa
-eaaa:
-    cmp byte [r12], 0
-    jne saaa
-eaa:
-    cmp byte [r12], 0
-    jne saa
-ea:
-    cmp byte [r12], 0
-    jne sa
-"""
-        == captured.out
-    )
+    assert captured.out == textwrap.dedent("""\
+        sa:
+            cmp byte [r12], 0
+            je ea
+        saa:
+            cmp byte [r12], 0
+            je eaa
+        saaa:
+            cmp byte [r12], 0
+            je eaaa
+        eaaa:
+            cmp byte [r12], 0
+            jne saaa
+        eaa:
+            cmp byte [r12], 0
+            jne saa
+        ea:
+            cmp byte [r12], 0
+            jne sa
+        """)
