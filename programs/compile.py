@@ -27,24 +27,24 @@ def add_to_stack():
     USES       stack temp
     """
     return [
-        MOV(0, 1),  # move value on to end of stack
-        SHF(1),  # move onto end of stack
+        MOV(0, -1),  # move value on to end of stack
+        SHF(-1),  # move onto end of stack
         ADD(-1),  # since stack is initially 1, get value to stack temp value
-        SHF(1),  # set up execution
+        SHF(-1),  # set up execution
         # loop does the following:
         # 4>1 1 0 5 becomes 1 4>1 0 5
         # 1 4>1 0 5 becomes 1 1 4>0 5
         LOOP(
             ADD(-1),  # decrement empty stack (1 -> 0)
-            MOV(-1, 0),  # curry value from last cell to this cell
-            SHF(-1),  # go back to old cell
+            MOV(1, 0),  # curry value from last cell to this cell
+            SHF(1),  # go back to old cell
             ADD(1),  # restore stack state (0 -> 1)
-            SHF(2),  # go to cell after curried value
+            SHF(-2),  # go to cell after curried value
         ),  # we see a zero
-        MOV(-1, 0),  # move curried value into this cell
-        SHF(-2),  # go back onto a 1
+        MOV(1, 0),  # move curried value into this cell
+        SHF(2),  # go back onto a 1
         # then we go back until we see a 0, which should be stack temp
-        LOOP(SHF(-1)),
+        LOOP(SHF(1)),
     ]
 
 
@@ -54,24 +54,24 @@ def pop_from_stack():
     USES       stack temp
     """
     return [
-        SHF(1),  # move onto stack
-        LOOP(SHF(1)),  # go until stack head
-        MOV(1, 0),  # move top of stack into previous cell
-        SHF(-1),  # set up for loop
+        SHF(-1),  # move onto stack
+        LOOP(SHF(-1)),  # go until stack head
+        MOV(-1, 0),  # move top of stack into previous cell
+        SHF(1),  # set up for loop
         # loop does the following:
         # 0 1>1 4 0 5 becomes  0>1 4 1 0 5
         # 0>1 4 1 0 5 becomes >0 4 1 1 0 5
         LOOP(
             ADD(-1),  # decrement empty stack (1 -> 0)
-            MOV(1, 0),  # curry value from last cell to this cell
-            SHF(1),  # go back to old cell
+            MOV(-1, 0),  # curry value from last cell to this cell
+            SHF(-1),  # go back to old cell
             ADD(1),  # restore stack state (0 -> 1)
-            SHF(-2),  # go to cell before curried value
+            SHF(2),  # go to cell before curried value
         ),
-        MOV(1, 0),  # move value into stack temp
-        SHF(1),  # move into top of stack
+        MOV(-1, 0),  # move value into stack temp
+        SHF(-1),  # move into top of stack
         ADD(1),  # reset to empty stack state (0 -> 1)
-        SHF(-1),  # move bcak into stack temp
+        SHF(1),  # move bcak into stack temp
     ]
 
 
@@ -304,14 +304,18 @@ def EMIT_HEADER(arch, tape_bytes):
 
 
 def init_stack(stack_size):
+    """
+    STARTS AT: stack end
+    ENDS AT: <0>
+    """
     return [
-        SHF(7),
+        SHF(1),
         *[
             ADD(1),
             SHF(1),
         ]
         * stack_size,
-        SHF(-(stack_size + 7)),
+        SHF(2)
     ]
 
 

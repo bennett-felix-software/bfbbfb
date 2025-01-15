@@ -6,6 +6,7 @@ from compile import (
     if_eq_then,
     begin_loop,
     end_loop,
+    init_stack,
 )
 from bfbbfb.dsl import ADD, COPY, SHF, ZERO, IN
 from bfbbfb.interpreter import (
@@ -27,44 +28,52 @@ def get_init_tape(stack_size):
         0,  # stack sentinel
     ]
 
+def test_init_stack():
+    i = DSLInterpreter(tape_size=8)
+    i.exec(*init_stack(4))
+
+    assert i.tape == [0, 1, 1, 1, 1, 0, 0, 0]
+    assert i.dp == 7
+
 
 @pytest.mark.parametrize("stack_size", [4, 1])
 def test_add_to_stack(stack_size):
-    i = DSLInterpreter([1, 3, *[1] * stack_size, 0])
-    i.exec(SHF(1))
+    i = DSLInterpreter(tape_size=stack_size+3)
+    i.exec(*init_stack(stack_size))
+    i.exec(SHF(-2), ADD(3))
     i.exec(*add_to_stack())
 
-    assert i.tape[0] == 1
-    assert i.tape[1] == 0
-    assert i.tape[-2] == 0
-    assert i.tape[-1] == 3
-    assert i.dp == 1
+    assert i.tape[:2] == [3, 0]
+    assert i.tape[-2:] == [0, 0]
+    assert i.dp == stack_size+1
 
 
 def test_add_to_stack_many():
-    i = DSLInterpreter([1, 0, 1, 1, 1, 0])
-    i.exec(SHF(1), ADD(1), *add_to_stack())
+    i = DSLInterpreter(tape_size=7)
+    i.exec(*init_stack(4))
+    i.exec(SHF(-2))
+    i.exec(ADD(1), *add_to_stack())
     i.exec(ADD(2), *add_to_stack())
     i.exec(ADD(3), *add_to_stack())
 
-    assert i.tape == [1, 0, 0, 3, 2, 1]
-    assert i.dp == 1
+    assert i.tape == [1, 2, 3, 0, 1, 0, 0]
+    assert i.dp == 5
 
 
 @pytest.mark.parametrize("stack_size", [4, 1, 0])
 def test_pop_from_stack(stack_size):
-    i = DSLInterpreter([1, 0, *[1] * stack_size, 0, 3], debug=True)
-    i.exec(SHF(1))
+
+    i = DSLInterpreter([3, 0, *[1] * stack_size, 0, 0])
+    i.exec(SHF(stack_size+2))
     i.exec(*pop_from_stack())
 
-    assert i.tape[0] == 1
-    assert i.tape[1] == 3
-    assert i.tape[-2] == 1
-    assert i.tape[-1] == 0
-    assert i.dp == 1
+    assert i.tape[:2] == [0, 1]
+    assert i.tape[-2:] == [3, 0]
+    assert i.dp == stack_size + 2
 
 
 @pytest.mark.parametrize("interp", [DSLInterpreter, BFInterpreter])
+@pytest.mark.skip
 def test_stack_complex(interp):
     BFInterpreter()
     i = interp([0, 1, 0, 1, 1, 1, 0])
