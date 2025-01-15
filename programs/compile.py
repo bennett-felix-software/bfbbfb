@@ -1,37 +1,30 @@
-from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT_S, SHF, ZERO, COPY
+from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT_S, SHF, ZERO
 
 DP = {
     "x86": "r12",
     "arm": "X19",
 }
 
-# !! Stack Structure !!
+# !! STACK STRUCTURE !!
 #
 # We use a stack in the compiler to keep track of labels so we can compile
 # nested loops. The stack stores values from 1 to 255 (the maximum cell value).
 # The stack has the following structure:
-# [<temp> 1 1 1 1 1 ... 1 0 x y z]
+# [z y x 0 1 1 1 1 ... 1 <temp>]
 # 1s represent spots on the stack. The 0 marks the cell directly before the
 # first stack value. x is on the top of the stack, z is on the bottom.
-#
-# !! Calling Convention !!
-# add_to_stack: expects to the value to be pushed to be in <temp>
-# pop_from_stack: expects <temp> to be 0
 
 # !! REGISTER STRUCTURE !!
-# 0:     global 0
-# 1:     program input
-# 2-4:   temp registers 1-3
-# 5:     global parenthesis index
-# 6:     stack temp
-# 7-261: stack memory
-# 262:   stack head
+# +-------+------------+--------------+-------+-----+----+----+----+--------+
+# | stack | stack temp | paren number | input | <0> | t1 | t2 | t3 | mem... |
+# +-------+------------+--------------+-------+-----+----+----+----+--------+
+# <0> should always be set to 0 (or at least very transiently not)
 
 
 def add_to_stack():
     """
-    STARTS AT  stack temp (6)
-    USES       stack temp (6)
+    STARTS AT  stack temp
+    USES       stack temp
     """
     return [
         MOV(0, 1),  # move value on to end of stack
@@ -57,8 +50,8 @@ def add_to_stack():
 
 def pop_from_stack():
     """
-    STARTS AT  stack temp (6)
-    USES       stack temp (6)
+    STARTS AT  stack temp
+    USES       stack temp
     """
     return [
         SHF(1),  # move onto stack
@@ -84,7 +77,7 @@ def pop_from_stack():
 
 def if_eq_then(comp, *instr):
     """
-    STARTS AT  program input (1)
+    STARTS AT  program input
     USES       tmp1 (2), tmp2 (3)
     *instr must start at 0 and end at 0
     """
