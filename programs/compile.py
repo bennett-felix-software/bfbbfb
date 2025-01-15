@@ -1,5 +1,4 @@
 from bfbbfb.dsl import ADD, IN, LOOP, MOV, OUT_S, SHF, ZERO, COPY
-import textwrap
 
 DP = {
     "x86": "r12",
@@ -324,13 +323,17 @@ def init_stack(stack_size):
         SHF(-(stack_size + 7)),
     ]
 
+
 def EMIT_FOOTER(arch):
-    return OUT_S({
-        "x86": """\
+    return OUT_S(
+        {
+            "x86": """\
     mov rax, 60
     mov rdi, 0
     syscall"""
-    }[arch])
+        }[arch]
+    )
+
 
 def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
     tape_size = int(tape_size)

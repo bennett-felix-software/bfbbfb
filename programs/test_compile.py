@@ -12,17 +12,18 @@ from bfbbfb.interpreter import (
     BFInterpreter,
 )
 
+
 def get_init_tape(stack_size):
     return [
-        0, # global 0
-        0, # input
-        0, # t1
-        0, # t2
-        0, # t3
-        0, # global parenthesis index
-        0, # stack temp
-        *[1]*stack_size, # stack
-        0, # stack sentinel
+        0,  # global 0
+        0,  # input
+        0,  # t1
+        0,  # t2
+        0,  # t3
+        0,  # global parenthesis index
+        0,  # stack temp
+        *[1] * stack_size,  # stack
+        0,  # stack sentinel
     ]
 
 
@@ -121,6 +122,7 @@ def test_if_eq_then():
     assert i.tape == [0, 98, 0, 0, 1, 0]
     assert i.dp == 1
 
+
 def test_begin_loop(capsys):
     i = DSLInterpreter(get_init_tape(5), "b")
     i.exec(*begin_loop("x86", 1))
@@ -129,7 +131,8 @@ def test_begin_loop(capsys):
 
     assert i.dp == 0
     captured = capsys.readouterr()
-    assert '''\
+    assert (
+        """\
 sa:
     cmp byte [r12], 0
     je ea
@@ -139,7 +142,9 @@ saa:
 saaa:
     cmp byte [r12], 0
     je eaaa
-''' == captured.out
+"""
+        == captured.out
+    )
 
 
 def test_end_loop(capsys):
@@ -153,7 +158,8 @@ def test_end_loop(capsys):
 
     assert i.dp == 0
     captured = capsys.readouterr()
-    assert '''\
+    assert (
+        """\
 sa:
     cmp byte [r12], 0
     je ea
@@ -172,4 +178,6 @@ eaa:
 ea:
     cmp byte [r12], 0
     jne sa
-'''== captured.out
+"""
+        == captured.out
+    )

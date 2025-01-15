@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from bfbbfb.interpreter import Interpreter
 
-class Instruction(ABC):
 
+class Instruction(ABC):
     @abstractmethod
     def __str__(self):
         pass
@@ -22,7 +22,7 @@ class ADD(Instruction):
 
     def exec(self, interp: Interpreter):
         interp.tape[interp.dp] += self.val
-        interp.tape[interp.dp] %= 2**(interp.cell_size*8)
+        interp.tape[interp.dp] %= 2 ** (interp.cell_size * 8)
 
 
 @dataclass
@@ -98,13 +98,13 @@ class LOOP(Instruction):
 
 @dataclass
 class IN(Instruction):
-
     def __str__(self):
         return ","
 
     def exec(self, interp: Interpreter):
         interp.tape[interp.dp] = ord(interp.input[interp.itp])
         interp.itp += 1
+
 
 @dataclass
 class OUT_N(Instruction):
@@ -115,18 +115,21 @@ class OUT_N(Instruction):
 
     def __str__(self):
         COPY(self.n, self.tmp2, self.tmp1)
-        
+
         to_src = str(SHF(self.src - self.tmp1))
-        from_src  = str(SHF(self.tmp1 - self.src))
-        return str(COPY(self.n, self.tmp2, self.tmp1)) \
-            + str(SHF(self.tmp1)) \
-            + f"[-{to_src}.{from_src}]" \
+        from_src = str(SHF(self.tmp1 - self.src))
+        return (
+            str(COPY(self.n, self.tmp2, self.tmp1))
+            + str(SHF(self.tmp1))
+            + f"[-{to_src}.{from_src}]"
             + str(SHF(-self.tmp1))
-        
-        return 
+        )
+
+        return
 
     def exec(self, interp: Interpreter):
         print(chr(interp.tape[interp.dp]), end="")
+
 
 @dataclass
 class OUT_S(Instruction):
@@ -145,4 +148,3 @@ class OUT_S(Instruction):
 
     def exec(self, interp: Interpreter):
         print(self.s, end="")
-

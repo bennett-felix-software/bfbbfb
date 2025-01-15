@@ -1,13 +1,9 @@
 import sys
 
+
 class Interpreter:
     def __init__(
-        self,
-        set_tape=None,
-        set_input="",
-        tape_size=30000,
-        cell_size=1,
-        debug=False
+        self, set_tape=None, set_input="", tape_size=30000, cell_size=1, debug=False
     ):
         if not set_tape:
             self.tape = [0 for _ in range(tape_size)]
@@ -22,7 +18,6 @@ class Interpreter:
         self.dp = 0
         self.itp = 0
 
-
     def disp(self, cells=None):
         if not cells:
             cells = self.tape_size
@@ -30,10 +25,9 @@ class Interpreter:
         for i in range(cells):
             s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
         return s
-    
+
 
 class DSLInterpreter(Interpreter):
-
     def exec(self, *program):
         for inst in program:
             if self.debug:
@@ -44,7 +38,6 @@ class DSLInterpreter(Interpreter):
 
 
 class BFInterpreter(Interpreter):
-
     def __init__(
         self,
         set_tape=None,
@@ -85,10 +78,10 @@ class BFInterpreter(Interpreter):
                     self.dp -= 1
                 case "+":
                     self.tape[self.dp] += 1
-                    self.tape[self.dp] %= 2**(self.cell_size*8)
+                    self.tape[self.dp] %= 2 ** (self.cell_size * 8)
                 case "-":
                     self.tape[self.dp] -= 1
-                    self.tape[self.dp] %= 2**(self.cell_size*8)
+                    self.tape[self.dp] %= 2 ** (self.cell_size * 8)
                 case ".":
                     print(chr(self.tape[self.dp]), end="")
                 case ",":
@@ -106,5 +99,3 @@ class BFInterpreter(Interpreter):
                     if self.tape[self.dp]:
                         ip = jump_table[ip]
             ip += 1
-
-
