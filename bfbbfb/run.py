@@ -1,5 +1,8 @@
 import argparse
 import sys
+import importlib
+import types
+import re
 
 from bfbbfb.interpreter import BFInterpreter
 from bfbbfb.compile import compile
@@ -14,29 +17,32 @@ def run():
     subparsers = parser.add_subparsers(required=True, dest="command")
     
     run_parser = subparsers.add_parser("run", help="run brainfuck, either as a string or from a file")
-    compile_parser = subparsers.add_parser("compile", help="compile the brainfuck to assembly compiler")
+    dsl_parser = subparsers.add_parser("dsl", help="compile a python file containing DSL code to brainfuck")
 
     width_args = ["--width"]
     width_kwargs = {"choices": [1, 2, 4, 8], "default": 1, "help": "set cell width in bytes"}
     length_args = ["--length"]
     length_kwargs = {"type": int, "default": 30000, "help": "set tape length"}
     
-    run_parser.add_argument("--file", action="store_true", help="treat the program as a file rather than as a brainfuck string")
+    run_parser.add_argument("--raw", action="store_true", help="treat the program as a raw brainfuck string")
     run_parser.add_argument(*width_args, **width_kwargs)
     run_parser.add_argument(*length_args, **length_kwargs)
     run_parser.add_argument("--print-tape", type=int, default=-1, help="how many cells of the tape to print when execution is finished", metavar="CELLS")
     run_parser.add_argument("program", type=str, help="the program to run")
 
-    compile_parser.add_argument(*width_args, **width_kwargs)
-    compile_parser.add_argument(*length_args, **length_kwargs)
-    compile_parser.add_argument("--stack", type=int, default=255, help="size of compiler's stack, bounded by 2^(cell_width*8)")
-    compile_parser.add_argument("arch", choices=["x86", "arm", "bf"], help="target cpu architecture for emitted compiler to compile to")
+    # compile_parser.add_argument(*width_args, **width_kwargs)
+    # compile_parser.add_argument(*length_args, **length_kwargs)
+    # compile_parser.add_argument("--stack", type=int, default=255, help="size of compiler's stack, bounded by 2^(cell_width*8)")
+    dsl_parser.add_argument("file", type=str, help="python file containing the DSL you want to compile")
+    dsl_parser.add_argument("--show-args", action="store_true", help="to see arguments and defaults for the DSL file you're compiling")
+    dsl_parser.add_argument("args", nargs="*")
+
 
     namespace = parser.parse_args(sys.argv[1:])
     match namespace.command:
         case "run":
             bf = namespace.program
-            if namespace.file:
+            if not namespace.raw:
                 try:
                     with open(namespace.program, "r") as f:
                         bf = f.read()
@@ -51,6 +57,29 @@ def run():
             if namespace.print_tape != -1:
                 i.disp(namespace.print_tape)
             
-        case "compile":
-            print("".join(map(str, compile(namespace.arch, namespace.length, namespace.width, namespace.stack))))
+        case "dsl":
+            
+            loader = importlib.machinery.SourceFileLoader("file", namespace.file)
+            mod = types.ModuleType(loader.name)
+            loader.exec_module(mod)
+
+            if "compile" not in dir(mod):
+                print(f"bfbbfb: error: no method `compile` found in {namespace.file}")
+                exit(1)
+            
+            if namespace.show_args:
+                import inspect
+                print(inspect.getfullargspec(mod.compile))
+                exit(1)
+            
+            kwargs = {}
+            args = []
+            for arg in namespace.args:
+                if m := re.match(r"(\w+)=(.*)", arg):
+                    kwargs[m.group(1)] = m.group(2)
+                else:
+                    args.append(arg)
+            
+            res = mod.compile(*args, **kwargs)
+            print("".join(map(str, res)))
 
