@@ -1,5 +1,4 @@
-from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT_S, SHF, ZERO
-
+from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT_S, SHF, ZERO, off, OUT_N, OUT
 DP = {
     "x86": "r12",
     "arm": "X19",
@@ -15,11 +14,18 @@ DP = {
 # first stack value. x is on the top of the stack, z is on the bottom.
 
 # !! REGISTER STRUCTURE !!
-# +-------+------------+--------------+-------+-----+----+----+----+--------+
-# | stack | stack temp | paren number | input | <0> | t1 | t2 | t3 | mem... |
-# +-------+------------+--------------+-------+-----+----+----+----+--------+
+# +-------+------------+--------------+-----+-------+----+----+----+--------+
+# | stack | stack temp | paren number | <0> | input | t1 | t2 | t3 | mem... |
+# +-------+------------+--------------+-----+-------+----+----+----+--------+
 # <0> should always be set to 0 (or at least very transiently not)
 
+ST=-2
+GPI=-1
+G0=0
+PI=1
+TMP1=2
+TMP2=3
+TMP3=4
 
 def add_to_stack():
     """
@@ -79,33 +85,33 @@ def if_eq_then(comp, *instr):
     """
     STARTS AT  program input
     USES       tmp1 (2), tmp2 (3)
-    *instr must start at 0 and end at 0
+    *instr must start at <0> and end at <0>
     """
     return [
         ADD(-ord(comp)),  # subtract to maybe zero
         # if it's not zero, subtract 1 from tmp1 (tmp2 is zero)
-        COPY(0, 1, 2),  # save value in temp2
+        COPY(*off(PI, PI, TMP1, TMP2)),  # save value in temp2
         LOOP(SHF(1), ADD(-1), SHF(-1), ZERO()),
-        MOV(2, 0),
+        MOV(*off(PI, TMP2, PI)),
         # add 1 to tmp1, it will now be 1 if eq, 0 if not
-        SHF(1),
+        SHF(*off(PI, TMP1)),
         ADD(1),
-        MOV(0, -2),  # move into 0
-        SHF(-2),  # go to 0
+        MOV(*off(TMP1, TMP1, G0)),  # move into 0
+        SHF(*off(TMP1, G0)),  # go to 0
         LOOP(
             ZERO(),
             *instr,  # instruction must start and end at 0
         ),
-        SHF(1),  # go back to program input
+        SHF(*off(G0, PI)),  # go back to program input
         ADD(ord(comp)),  # restore original program input
     ]
 
 
 def begin_loop(arch, cell_bytes):
     """
-    STARTS AT 0
-    USES      tmp1, tmp2
-    ENDS AT   0
+    STARTS AT <0>
+    USES      tmp1, tmp2, tmp3
+    ENDS AT   <0>
     """
     if arch == "bf":
         return "["
@@ -116,41 +122,27 @@ def begin_loop(arch, cell_bytes):
         "arm": "unimplemented",
     }
     return [
-        SHF(-2),  # go to global parenthesis index
-        ADD(1),  # bump it (this means we can start it at 0)
-        COPY(0, 3, -1),  # copy it to stack temp
-        SHF(-1),  # move to stack temp, as per add_to_stack calling convention
+        SHF(*off(G0, GPI)),  # go to global parenthesis index
+        # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
+        ADD(1),  
+        COPY(*off(GPI, GPI, TMP1, ST)),
+        SHF(*off(GPI, ST)),  # move to stack temp, as per add_to_stack calling convention
         *add_to_stack(),  # add it to the stack
-        SHF(1),  # move back to global parenthesis index
-        COPY(0, 4, 3),  # copy index into t1
-        COPY(0, 5, 4),  # copy index into t2
-        SHF(5),  # move to t3
-        OUT_S("s"),  # emit start of label
-        SHF(-1),  # move to t2
-        LOOP(  # emit a's until t2 is 0
-            SHF(1),  # move into t3
-            OUT_S("a"),  # emit a
-            SHF(-1),  # move back into t2
-            ADD(-1),  # decrement t2
-        ),  # at t2
-        OUT_S(":\n"),  # emit end of label
-        OUT_S(body[arch]),
-        LOOP(  # emit a's until t1 is 0
-            SHF(1),  # move into t2
-            OUT_S("a"),  # emit a
-            SHF(-1),  # move back to t1
-            ADD(-1),  # decrement t1
-        ),  # at 1
+        SHF(*off(ST, TMP1)), # move into TMP1
+        OUT_S("s"),
+        OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
+        OUT_S(":\n" + body[arch]),  # emit end of label
+        OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
         OUT_S("\n"),  # move to next line
-        SHF(-1),  # end back at index 0
+        SHF(*off(TMP1, G0)),  # end back at index 0
     ]
 
 
 def end_loop(arch, cell_bytes):
     """
-    STARTS AT 0
+    STARTS AT <0>
     USES      tmp1, tmp2
-    ENDS AT   0
+    ENDS AT   <0>
     """
     if arch == "bf":
         return "]"
@@ -161,30 +153,17 @@ def end_loop(arch, cell_bytes):
         "arm": "unimplemented",
     }
     return [
-        SHF(-3),  # go to stack temp
+        SHF(*off(G0, ST)),  # go to stack temp
         *pop_from_stack(),  # pop from the stack
-        COPY(0, 5, 4),  # copy val into t1
-        MOV(0, 5),  # move val into t2
-        SHF(6),  # move to t3
-        OUT_S("e"),  # emit start of label
-        SHF(-1),  # move to t2
-        LOOP(  # emit a's until t2 is 0
-            SHF(1),  # move into t3
-            OUT_S("a"),  # emit a
-            SHF(-1),  # move back into t2
-            ADD(-1),  # decrement t2
-        ),  # at t2
-        OUT_S(":\n"),  # emit end of label
-        OUT_S(body[arch]),
-        SHF(-1),  # move to t1
-        LOOP(  # emit a's until t1 is 0
-            SHF(-1),  # move into t2
-            OUT_S("a"),  # emit a
-            SHF(-1),  # move back to t1
-            ADD(-1),  # decrement t1
-        ),  # at t1
+        SHF(*off(ST, TMP1)),
+        OUT_S("e"),
+        OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
+        OUT_S(":\n" + body[arch]),  # emit end of label
+        OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
         OUT_S("\n"),  # move to next line
-        SHF(-1),  # end back at index 0
+        SHF(*off(TMP1, ST)),
+        ZERO(),
+        SHF(*off(ST, G0))
     ]
 
 

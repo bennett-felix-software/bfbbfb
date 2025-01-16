@@ -32,7 +32,7 @@ class DSLInterpreter(Interpreter):
     def exec(self, *program):
         for inst in program:
             if self.debug:
-                print(type(inst))
+                print(repr(inst))
             inst.exec(self)
             if self.debug:
                 print(self.disp(self.tape_size))
@@ -54,7 +54,7 @@ class BFInterpreter(Interpreter):
     def exec(self, *program):
         for inst in program:
             if self.debug:
-                print(type(inst))
+                print(repr(inst))
             self._exec_brainfuck(str(inst))
             if self.debug:
                 print(self.disp(self.tape_size))
