@@ -116,36 +116,33 @@ def begin_loop(arch, cell_bytes):
         "arm": "unimplemented",
     }
     return [
-        SHF(5),  # go to global parenthesis index
-        ADD(
-            1
-        ),  # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
-        COPY(0, -3, 1),  # copy it to stack temp
-        SHF(1),  # move to stack temp, as per add_to_stack calling convention
+        SHF(-2),  # go to global parenthesis index
+        ADD(1),  # bump it (this means we can start it at 0)
+        COPY(0, 3, -1),  # copy it to stack temp
+        SHF(-1),  # move to stack temp, as per add_to_stack calling convention
         *add_to_stack(),  # add it to the stack
-        SHF(-1),  # move back to global parenthesis index
-        COPY(0, -2, -3),  # copy index into t1
-        COPY(0, -2, -1),  # copy index into t3
-        SHF(-2),  # move to t2
+        SHF(1),  # move back to global parenthesis index
+        COPY(0, 4, 3),  # copy index into t1
+        COPY(0, 5, 4),  # copy index into t2
+        SHF(5),  # move to t3
         OUT_S("s"),  # emit start of label
-        SHF(-1),  # move to t1
-        LOOP(  # emit a's until t1 is 0
-            SHF(1),  # move back into t2
+        SHF(-1),  # move to t2
+        LOOP(  # emit a's until t2 is 0
+            SHF(1),  # move into t3
             OUT_S("a"),  # emit a
-            SHF(-1),  # move back into t1
-            ADD(-1),  # decrement t1
-        ),  # at t1
+            SHF(-1),  # move back into t2
+            ADD(-1),  # decrement t2
+        ),  # at t2
         OUT_S(":\n"),  # emit end of label
         OUT_S(body[arch]),
-        SHF(2),  # move to t3
-        LOOP(  # emit a's until t3 is 0
-            SHF(-1),  # move back into t2
+        LOOP(  # emit a's until t1 is 0
+            SHF(1),  # move into t2
             OUT_S("a"),  # emit a
-            SHF(1),  # move back to t3
-            ADD(-1),  # decrement t3
-        ),  # at t3
+            SHF(-1),  # move back to t1
+            ADD(-1),  # decrement t1
+        ),  # at 1
         OUT_S("\n"),  # move to next line
-        SHF(-4),  # end back at index 0
+        SHF(-1),  # end back at index 0
     ]
 
 
@@ -164,30 +161,30 @@ def end_loop(arch, cell_bytes):
         "arm": "unimplemented",
     }
     return [
-        SHF(6),  # go to stack temp
+        SHF(-3),  # go to stack temp
         *pop_from_stack(),  # pop from the stack
-        COPY(0, -3, -2),  # copy val into t3
-        MOV(0, -4),  # move val into t1
-        SHF(-3),  # move to t2
+        COPY(0, 5, 4),  # copy val into t1
+        MOV(0, 5),  # move val into t2
+        SHF(6),  # move to t3
         OUT_S("e"),  # emit start of label
-        SHF(-1),  # move to t1
-        LOOP(  # emit a's until t1 is 0
-            SHF(1),  # move back into t2
+        SHF(-1),  # move to t2
+        LOOP(  # emit a's until t2 is 0
+            SHF(1),  # move into t3
             OUT_S("a"),  # emit a
-            SHF(-1),  # move back into t1
-            ADD(-1),  # decrement t1
-        ),  # at t1
+            SHF(-1),  # move back into t2
+            ADD(-1),  # decrement t2
+        ),  # at t2
         OUT_S(":\n"),  # emit end of label
         OUT_S(body[arch]),
-        SHF(2),  # move to t3
-        LOOP(  # emit a's until t3 is 0
-            SHF(-1),  # move back into t2
+        SHF(-1),  # move to t1
+        LOOP(  # emit a's until t1 is 0
+            SHF(-1),  # move into t2
             OUT_S("a"),  # emit a
-            SHF(1),  # move back to t3
-            ADD(-1),  # decrement t3
-        ),  # at t3
+            SHF(-1),  # move back to t1
+            ADD(-1),  # decrement t1
+        ),  # at t1
         OUT_S("\n"),  # move to next line
-        SHF(-4),  # end back at index 0
+        SHF(-1),  # end back at index 0
     ]
 
 

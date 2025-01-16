@@ -7,6 +7,7 @@ class Interpreter:
     ):
         if not set_tape:
             self.tape = [0 for _ in range(tape_size)]
+            self.tape_size = tape_size
         else:
             self.tape = set_tape
             self.tape_size = len(set_tape)

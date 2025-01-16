@@ -14,20 +14,6 @@ from bfbbfb.interpreter import (
     BFInterpreter,
 )
 
-
-def get_init_tape(stack_size):
-    return [
-        0,  # global 0
-        0,  # input
-        0,  # t1
-        0,  # t2
-        0,  # t3
-        0,  # global parenthesis index
-        0,  # stack temp
-        *[1] * stack_size,  # stack
-        0,  # stack sentinel
-    ]
-
 def test_init_stack():
     i = DSLInterpreter(tape_size=8)
     i.exec(*init_stack(4))
@@ -134,10 +120,15 @@ def test_if_eq_then():
 
 
 def test_begin_loop(capsys):
-    i = DSLInterpreter(get_init_tape(5), "b")
+    i = DSLInterpreter(
+            tape_size=10,
+            debug=True
+                       )
+    i.exec(*init_stack(3))
     i.exec(*begin_loop("x86", 1))
     i.exec(*begin_loop("x86", 1))
-    i.exec(*begin_loop("x86", 1))
+    assert i.dp == 6
+    # i.exec(*begin_loop("x86", 1))
 
     assert i.dp == 0
     captured = capsys.readouterr()
