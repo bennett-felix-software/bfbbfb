@@ -58,7 +58,7 @@ def test_pop_from_stack(stack_size):
     assert i.dp == stack_size + 2
 
 
-@pytest.mark.parametrize("interp", [DSLInterpreter])#, BFInterpreter])
+@pytest.mark.parametrize("interp", [DSLInterpreter, BFInterpreter])
 def test_stack_complex(interp):
     BFInterpreter()
     # i = interp([0, 1, 0, 1, 1, 1, 0])
@@ -178,4 +178,13 @@ def test_end_loop(capsys):
             cmp byte [r12], 0
             jne sa
         """)
+
+
+def test_init_stack():
+    i = DSLInterpreter([0, 0, 0, 0, 0, 0, 0])
+    i.exec(*init_stack(3))
+    assert i.tape == [0, 1, 1, 1, 0, 0, 0]
+    assert i.dp == 6
+    
+    
 

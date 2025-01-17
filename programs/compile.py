@@ -1,4 +1,5 @@
 from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT_S, SHF, ZERO, off, OUT_N, OUT
+import textwrap
 DP = {
     "x86": "r12",
     "arm": "X19",
@@ -305,6 +306,18 @@ def EMIT_FOOTER(arch):
         }[arch]
     )
 
+def print_tape(off1, off2):
+    return [
+        SHF(off1),
+        *sum([[
+            ADD(33),
+            OUT(),
+            ADD(-33),
+            SHF(1),
+        ] for _ in range(off1, off2+1)], []),
+        SHF(-off2),
+    ]
+
 
 def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
     tape_size = int(tape_size)
@@ -313,7 +326,12 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
     return [
         EMIT_HEADER(arch, tape_size * cell_bytes),
         *init_stack(stack_size),
-        SHF(1),  # move to program_in
+        SHF(*off(G0, PI)),  # move to program_in
+
+        OUT_S("\n|"),
+        *print_tape(*off(PI, ST-3, TMP3)),
+        OUT_S("|\n"),
+
         IN(),  # get in
         LOOP(  # main loop, switch on all possible inputs
             *if_eq_then(">", EMIT_INCREMENT_DP(arch, cell_bytes)),
