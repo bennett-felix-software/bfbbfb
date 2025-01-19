@@ -12,8 +12,8 @@ asm: compile
 
 NAME="a.out"
 make_asm:
-	nasm -f elf64 $(NAME).asm -o $(NAME).asm.o
-	ld -s -o $(NAME) $(NAME).asm.o
+	nasm -f elf64 -g -F dwarf $(NAME).asm -o $(NAME).asm.o
+	gcc -g $(NAME).asm.o -o $(NAME)
 
 clean:
 	rm *.asm

@@ -58,10 +58,10 @@ def test_loop():
 
 
 def test_out_n(capsys):
-    i = BFInterpreter([97, 3, 0, 0])
-    i.exec(OUT_N(0, 1, 2, 3))
+    i = BFInterpreter([3, 0, 0, 0])
+    i.exec(OUT_N("a", 0, 1, 2, 3))
 
-    assert i.tape == [97, 3, 0, 0]
+    assert i.tape == [3, 0, 0, 0]
     assert i.dp == 0
 
     captured = capsys.readouterr()

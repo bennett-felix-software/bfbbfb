@@ -105,30 +105,43 @@ class IN(Instruction):
         interp.tape[interp.dp] = ord(interp.input[interp.itp])
         interp.itp += 1
 
-
 @dataclass
-class OUT_N(Instruction):
-    src: int
-    n: int
-    tmp1: int
-    tmp2: int
+class OUT(Instruction):
 
     def __str__(self):
-        COPY(self.n, self.tmp2, self.tmp1)
-
-        to_src = str(SHF(self.src - self.tmp1))
-        from_src = str(SHF(self.tmp1 - self.src))
-        return (
-            str(COPY(self.n, self.tmp2, self.tmp1))
-            + str(SHF(self.tmp1))
-            + f"[-{to_src}.{from_src}]"
-            + str(SHF(-self.tmp1))
-        )
-
-        return
+        return "."
 
     def exec(self, interp: Interpreter):
         print(chr(interp.tape[interp.dp]), end="")
+
+@dataclass
+class OUT_N(Instruction):
+    src: chr
+    n: int
+    tmp1: int
+    tmp2: int
+    tmp3: int
+
+    def __str__(self):
+
+        return "".join(map(str, (
+            COPY(self.n, self.tmp3, self.tmp2),
+            SHF(self.tmp1),
+            ADD(ord(self.src)),
+            SHF(*off(self.tmp1, self.tmp2)),
+            LOOP(
+                ADD(-1),
+                SHF(*off(self.tmp2, self.tmp1)),
+                OUT(),
+                SHF(*off(self.tmp1, self.tmp2)),
+            ),
+            SHF(*off(self.tmp2, self.tmp1)),
+            ADD(-ord(self.src)),
+            SHF(-self.tmp1)
+        )))
+
+    def exec(self, interp: Interpreter):
+        print(self.src*interp.tape[interp.dp+self.n], end="")
 
 
 @dataclass
@@ -148,3 +161,7 @@ class OUT_S(Instruction):
 
     def exec(self, interp: Interpreter):
         print(self.s, end="")
+
+
+def off(reference, *args):
+    return [arg - reference for arg in args]
