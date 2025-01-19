@@ -30,29 +30,32 @@ class CompileCtx:
         self.arch = arch
         self.dp = {"x86": "r12", "arm": "X19"}[arch]
         if arch == "x86":
-            self.asm_snippets = {
-                # Ordered in terms of commonness of use. More common operations
-                # are closer to <0> so we have to travel less far to get to them.
-                #
-                # Also avoid indentation and comments because it takes longer to print
-                # in brainfuck
-                "increment_tape": f"add {self.cell_bytes} [{self.dp}], 1\n",
-                "decrement_tape": f"sub {self.cell_bytes} [{self.dp}], 1\n",
-                "increment_dp": f"add {self.dp}, {self.cell_bytes}\n",
-                "decrement_dp": f"sub {self.dp}, {self.cell_bytes}\n",
-                "check_loop_start": f"cmp {self.addrmode} [{self.dp}], 0\nje e",
-                "check_loop_end": f"cmp {self.addrmode} [{self.dp}], 0\njne s",
-                "output": textwrap.dedent(
-                    f"""\
+            # Ordered in terms of commonness of use. More common operations
+            # are closer to <0> so we have to travel less far to get to them.
+            #
+            # Also avoid indentation and comments because it takes longer to print
+            # in brainfuck
+            snippets = [
+                ("increment_dp", f"add {self.dp}, {self.cell_bytes}\n"),
+                ("decrement_dp", f"sub {self.dp}, {self.cell_bytes}\n"),
+                ("increment_tape", f"add {self.cell_bytes} [{self.dp}], 1\n"),
+                ("decrement_tape", f"sub {self.cell_bytes} [{self.dp}], 1\n"),
+                ("check_loop_start", f"cmp {self.addrmode} [{self.dp}], 0\nje e"),
+                ("check_loop_end", f"cmp {self.addrmode} [{self.dp}], 0\njne s"),
+                (
+                    "output",
+                    textwrap.dedent(f"""\
                     mov rdi, 1
                     lea rsi, [{self.dp}]
                     mov rdx, 1
                     mov rax, 1
                     syscall
-                    """
+                    """),
                 ),
-                "input": textwrap.dedent(
-                    f"""\
+                (
+                    "input",
+                    textwrap.dedent(
+                        f"""\
                     mov rdi, 0
                     lea rsi, [{self.dp}]
                     mov rdx, 1
@@ -60,9 +63,12 @@ class CompileCtx:
                     syscall
                     call check_return
                     """
+                    ),
                 ),
-                "header": textwrap.dedent(
-                    f"""\
+                (
+                    "header",
+                    textwrap.dedent(
+                        f"""\
                     global main
                     section .text
                     main:
@@ -74,9 +80,12 @@ class CompileCtx:
                     jnz .zeroize_stack
                     mov {self.dp}, rsp
                     """
+                    ),
                 ),
-                "footer": textwrap.dedent(
-                    f"""\
+                (
+                    "footer",
+                    textwrap.dedent(
+                        f"""\
                     mov rax, 60
                     mov rdi, 0
                     syscall
@@ -87,17 +96,57 @@ class CompileCtx:
                     .ret:
                     ret
                     """
+                    ),
                 ),
-            }
+            ]
+            self.snip_offsets = dict(
+                zip(map(lambda tup: tup[0], snippets), range(len(snippets)))
+            )
+            self.snippets = dict(snippets)
         elif arch == "arm":
             raise NotImplementedError
+
+    def emit_snippet(self, key):
+        """
+        STARTS AT: <0>
+        ENDS AT <0>
+        """
+        n_skips = self.snip_offsets[key]
+        return [
+            SHF(*off(G0, M0)),  # go to first spot of mem
+            *[
+                LOOP(
+                    SHF(1)  # skip a snippet
+                ),
+                SHF(1),  # go onto next snippet
+            ]
+            * n_skips,  # skip the first n snippets
+            LOOP(  # print the snippet
+                OUT(),  # output char
+                SHF(1),  # go to next char
+            ),  # we are now at the 0 after the snippet
+            SHF(-1), # go back onto the end of the snippet
+            # go back n snippets
+            *[
+                LOOP(
+                    SHF(-1)  # go back one snippet
+                ),
+                SHF(-1),  # go onto previous snippet
+            ]
+            * n_skips, # we are now after the first snippet since we printed one
+            SHF(-1), # go onto the end of the first snippet
+            LOOP(
+                SHF(-1),  # go back past the first snippet
+            ),  # we are now at t3
+            SHF(*off(TMP3, G0)),  # go back to <0>
+        ]
 
     def init_tape(self):
         """
         STARTS AT: stack end
         ENDS AT: <0>
         """
-        return [
+        dsl = [
             # init the stack
             SHF(1),
             *[
@@ -105,8 +154,36 @@ class CompileCtx:
                 SHF(1),
             ]
             * self.stack_size,
-            SHF(2),
+            # go to start of memory
+            SHF(*off(ST, M0)),
         ]
+        # loop through snippets in sorted order
+        for key, _ in sorted(
+            self.snip_offsets.items(),
+            key=lambda tup: tup[1],
+        ):
+            s = self.snippets[key]
+            for c in s:
+                dsl += [
+                    ADD(ord(c)), # put the char value in the cell
+                    SHF(1),  # go to next
+                ]
+            dsl.append(
+                SHF(1)  # go onto next snippet
+            )
+
+        dsl.append(SHF(-1))  # go onto end of last snippet
+        for _ in range(len(self.snippets)):
+            dsl += [
+                LOOP(
+                    SHF(-1)  # skip back one snippet
+                ),
+                SHF(-1),  # go onto previous snippet
+            ]
+
+        # Skipping the last snippet put us on t3; go back to <0>
+        dsl.append(SHF(*off(TMP3, G0)))
+        return dsl
 
     def begin_loop(self):
         """
@@ -126,7 +203,10 @@ class CompileCtx:
             SHF(*off(ST, TMP1)),  # move into TMP1
             OUT_S("s"),
             OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
-            OUT_S(":\n" + self.asm_snippets["check_loop_start"]),  # emit end of label
+            OUT_S(":\n"),  # emit end of label
+            SHF(-2),  # move into <0>
+            *self.emit_snippet("check_loop_start"),
+            SHF(2),  # move back into t1
             OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
             OUT_S("\n"),  # move to next line
             SHF(*off(TMP1, G0)),  # end back at index 0
@@ -144,7 +224,10 @@ class CompileCtx:
             SHF(*off(ST, TMP1)),
             OUT_S("e"),
             OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
-            OUT_S(":\n" + self.asm_snippets["check_loop_end"]),  # emit end of label
+            OUT_S(":\n"),  # emit end of label
+            SHF(-2),  # move into <0>
+            *self.emit_snippet("check_loop_start"),
+            SHF(2),  # move back into t1
             OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
             OUT_S("\n"),  # move to next line
             SHF(*off(TMP1, ST)),
@@ -153,28 +236,28 @@ class CompileCtx:
         ]
 
     def EMIT_INCREMENT_DP(self):
-        return OUT_S(self.asm_snippets["increment_dp"])
+        return self.emit_snippet("increment_dp")
 
     def EMIT_DECREMENT_DP(self):
-        return OUT_S(self.asm_snippets["decrement_dp"])
+        return self.emit_snippet("decrement_dp")
 
     def EMIT_INCREMENT_TAPE(self):
-        return OUT_S(self.asm_snippets["increment_tape"])
+        return self.emit_snippet("increment_tape")
 
     def EMIT_DECREMENT_TAPE(self):
-        return OUT_S(self.asm_snippets["decrement_tape"])
+        return self.emit_snippet("decrement_tape")
 
     def EMIT_OUTPUT(self):
-        return OUT_S(self.asm_snippets["output"])
+        return self.emit_snippet("output")
 
     def EMIT_INPUT(self):
-        return OUT_S(self.asm_snippets["input"])
+        return self.emit_snippet("input")
 
     def EMIT_HEADER(self):
-        return OUT_S(self.asm_snippets["header"])
+        return self.emit_snippet("header")
 
     def EMIT_FOOTER(self):
-        return OUT_S(self.asm_snippets["footer"])
+        return self.emit_snippet("footer")
 
 
 ST = -2
@@ -184,6 +267,7 @@ PI = 1
 TMP1 = 2
 TMP2 = 3
 TMP3 = 4
+M0 = 5
 
 
 def add_to_stack():
@@ -288,20 +372,20 @@ def print_tape(off1, off2):
 def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
     cc = CompileCtx(arch, int(tape_size), int(cell_bytes), int(stack_size))
     return [
-        cc.EMIT_HEADER(),
         *cc.init_tape(),
+        *cc.EMIT_HEADER(),
         SHF(*off(G0, PI)),  # move to program_in
         IN(),  # get in
         LOOP(  # main loop, switch on all possible inputs
-            *if_eq_then(">", cc.EMIT_INCREMENT_DP()),
-            *if_eq_then("<", cc.EMIT_DECREMENT_DP()),
-            *if_eq_then("+", cc.EMIT_INCREMENT_TAPE()),
-            *if_eq_then("-", cc.EMIT_DECREMENT_TAPE()),
-            *if_eq_then(".", cc.EMIT_OUTPUT()),
-            *if_eq_then(",", cc.EMIT_INPUT()),
+            *if_eq_then(">",*cc.EMIT_INCREMENT_DP()),
+            *if_eq_then("<",*cc.EMIT_DECREMENT_DP()),
+            *if_eq_then("+",*cc.EMIT_INCREMENT_TAPE()),
+            *if_eq_then("-",*cc.EMIT_DECREMENT_TAPE()),
+            *if_eq_then(".",*cc.EMIT_OUTPUT()),
+            *if_eq_then(",",*cc.EMIT_INPUT()),
             *if_eq_then("[", *cc.begin_loop()),
             *if_eq_then("]", *cc.end_loop()),
             IN(),
         ),
-        cc.EMIT_FOOTER(),
+        *cc.EMIT_FOOTER(),
     ]
