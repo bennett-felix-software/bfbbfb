@@ -109,10 +109,10 @@ class CompileCtx:
                     ),
                 ),
             ]
-            self.snip_offsets = dict(
-                zip(map(lambda tup: tup[0], snippets), range(len(snippets)))
-            )
             self.snippets = dict(snippets)
+            # sort to keep it deterministic for now
+            chars = sorted(list(set("".join(s for s in self.snippets.values()))))
+            self.alphabet = dict(zip(chars, range(len(chars))))
         elif arch == "arm":
             raise NotImplementedError
 
@@ -121,42 +121,26 @@ class CompileCtx:
         STARTS AT: <0>
         ENDS AT <0>
         """
-        n_skips = self.snip_offsets[key]
-        return [
-            SHF(*off(G0, M0)),  # go to first spot of mem
-            *[
-                LOOP(
-                    SHF(1)  # skip a snippet
-                ),
-                SHF(1),  # go onto next snippet
-            ]
-            * n_skips,  # skip the first n snippets
-            LOOP(  # print the snippet
-                OUT(),  # output char
-                SHF(1),  # go to next char
-            ),  # we are now at the 0 after the snippet
-            SHF(-1),  # go back onto the end of the snippet
-            # go back n snippets
-            *[
-                LOOP(
-                    SHF(-1)  # go back one snippet
-                ),
-                SHF(-1),  # go onto previous snippet
-            ]
-            * n_skips,  # we are now after the first snippet since we printed one
-            SHF(-1),  # go onto the end of the first snippet
-            LOOP(
-                SHF(-1),  # go back past the first snippet
-            ),  # we are now at t3
-            SHF(*off(TMP3, G0)),  # go back to <0>
+        dsl = [
+            SHF(*off(G0, M0)),
         ]
+        pos = 0
+        for c in self.snippets[key]:
+            i = self.alphabet[c]
+            dsl += [SHF(*off(pos, i)), OUT()]
+            pos = i
+        dsl += [
+            SHF(-pos),  # go back to M0
+            SHF(*off(M0, G0)),
+        ]
+        return dsl
 
     def init_tape(self):
         """
         STARTS AT: stack end
         ENDS AT: <0>
         """
-        dsl = [
+        return [
             # init the stack
             SHF(1),
             *[
@@ -164,36 +148,23 @@ class CompileCtx:
                 SHF(1),
             ]
             * self.stack_size,
-            # go to start of memory
             SHF(*off(ST, M0)),
-        ]
-        # loop through snippets in sorted order
-        for key, _ in sorted(
-            self.snip_offsets.items(),
-            key=lambda tup: tup[1],
-        ):
-            s = self.snippets[key]
-            for c in s:
-                dsl += [
-                    ADD(ord(c)),  # put the char value in the cell
-                    SHF(1),  # go to next
-                ]
-            dsl.append(
-                SHF(1)  # go onto next snippet
-            )
-
-        dsl.append(SHF(-1))  # go onto end of last snippet
-        for _ in range(len(self.snippets)):
-            dsl += [
-                LOOP(
-                    SHF(-1)  # skip back one snippet
+            *sum(
+                (
+                    [
+                        ADD(ord(c)),  # put the char value in the cell
+                        SHF(1),  # go to next
+                    ]
+                    for c, _ in sorted(
+                        self.alphabet.items(),
+                        key=lambda tup: tup[1],
+                    )
                 ),
-                SHF(-1),  # go onto previous snippet
-            ]
-
-        # Skipping the last snippet put us on t3; go back to <0>
-        dsl.append(SHF(*off(TMP3, G0)))
-        return dsl
+                [],
+            ),
+            SHF(-len(self.alphabet)),  # go back to M0
+            SHF(*off(M0, G0)),
+        ]
 
     def begin_loop(self):
         """
@@ -387,5 +358,6 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
             *if_eq_then("]", *cc.end_loop()),
             IN(),
         ),
+        SHF(*off(PI, G0)),
         *cc.emit_footer(),
     ]
