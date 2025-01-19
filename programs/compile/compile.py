@@ -251,6 +251,7 @@ def EMIT_INPUT(arch):
     mov rdx, 1      ; count = 1
     mov rax, 0      ; call  = sys_read
     syscall
+    call check_return
 """,
             "arm": "unimplemented",
             "bf": ",",
@@ -263,18 +264,16 @@ def EMIT_HEADER(arch, tape_bytes):
     return OUT_S(
         {
             "x86": textwrap.dedent(f"""\
-                global _start
+                global main
                 section .text
-                _start:
-                    mov {dp}, rsp
+                main:
                     mov rcx, {tape_bytes // 8 + 1}
                 .zeroize_stack:
                     mov qword [rsp], 0
                     sub rsp, 8
                     dec rcx
                     jnz .zeroize_stack
-                .done:
-                    mov rsp, {dp}
+                    mov {dp}, rsp
                 """)
         }[arch]
     )
@@ -296,13 +295,20 @@ def init_stack(stack_size):
     ]
 
 
-def EMIT_FOOTER(arch):
+def EMIT_FOOTER(arch, cell_bytes):
     return OUT_S(
         {
-            "x86": """\
-    mov rax, 60
-    mov rdi, 0
-    syscall"""
+            "x86": textwrap.dedent(f"""\
+                mov rax, 60
+                mov rdi, 0
+                syscall
+            check_return:
+                test rax, rax
+                jnz .ret
+                mov {addrmode(cell_bytes)} [{DP[arch]}], 0
+            .ret:
+                ret
+            """)
         }[arch]
     )
 
@@ -327,11 +333,6 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
         EMIT_HEADER(arch, tape_size * cell_bytes),
         *init_stack(stack_size),
         SHF(*off(G0, PI)),  # move to program_in
-
-        OUT_S("\n|"),
-        *print_tape(*off(PI, ST-3, TMP3)),
-        OUT_S("|\n"),
-
         IN(),  # get in
         LOOP(  # main loop, switch on all possible inputs
             *if_eq_then(">", EMIT_INCREMENT_DP(arch, cell_bytes)),
@@ -344,5 +345,5 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
             *if_eq_then("]", *end_loop(arch, cell_bytes)),
             IN(),
         ),
-        EMIT_FOOTER(arch),
+        EMIT_FOOTER(arch, cell_bytes),
     ]
