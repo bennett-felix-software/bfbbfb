@@ -37,22 +37,27 @@ class CompileCtx:
                 "decrement_dp": f"    sub {self.dp}, {self.cell_bytes}\n",
                 "increment_tape": f"    add {self.cell_bytes} [{self.dp}], 1\n",
                 "decrement_tape": f"    sub {self.cell_bytes} [{self.dp}], 1\n",
-                "output": f"""\
-        mov rdi, 1      ; fd    = stdout
-        lea rsi, [{self.dp}] ; buf   = tape[dp]
-        mov rdx, 1      ; count = 1
-        mov rax, 1      ; call  = sys_write
-        syscall
-    """,
-                "input": f"""\
-        mov rdi, 0      ; fd    = stdin
-        lea rsi, [{self.dp}] ; buf   = tape[dp]
-        mov rdx, 1      ; count = 1
-        mov rax, 0      ; call  = sys_read
-        syscall
-        call check_return
-    """,
-                "header": textwrap.dedent(f"""\
+                "output": textwrap.dedent(
+                    f"""\
+                        mov rdi, 1      ; fd    = stdout
+                        lea rsi, [{self.dp}] ; buf   = tape[dp]
+                        mov rdx, 1      ; count = 1
+                        mov rax, 1      ; call  = sys_write
+                        syscall
+                    """
+                ),
+                "input": textwrap.dedent(
+                    f"""\
+                        mov rdi, 0      ; fd    = stdin
+                        lea rsi, [{self.dp}] ; buf   = tape[dp]
+                        mov rdx, 1      ; count = 1
+                        mov rax, 0      ; call  = sys_read
+                        syscall
+                        call check_return
+                    """
+                ),
+                "header": textwrap.dedent(
+                    f"""\
                     global main
                     section .text
                     main:
@@ -63,18 +68,21 @@ class CompileCtx:
                         dec rcx
                         jnz .zeroize_stack
                         mov {self.dp}, rsp
-                    """),
-                "footer": textwrap.dedent(f"""\
-                    mov rax, 60
-                    mov rdi, 0
-                    syscall
-                check_return:
-                    test rax, rax
-                    jnz .ret
-                    mov {self.addrmode} [{self.dp}], 0
-                .ret:
-                    ret
-                """),
+                    """
+                ),
+                "footer": textwrap.dedent(
+                    f"""\
+                        mov rax, 60
+                        mov rdi, 0
+                        syscall
+                    check_return:
+                        test rax, rax
+                        jnz .ret
+                        mov {self.addrmode} [{self.dp}], 0
+                    .ret:
+                        ret
+                    """
+                ),
             }
         elif arch == "arm":
             raise NotImplementedError
