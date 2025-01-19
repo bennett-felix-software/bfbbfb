@@ -27,6 +27,29 @@ TMP2 = 3
 TMP3 = 4
 M0 = 5
 
+def optimize_alphabet_layout(ss: list[str]) -> str:
+    chars = list(set("".join(ss)))
+    edges = defaultdict(lambda: 0)
+    for s in ss:
+        for i in range(len(s) - 1):
+            edges[tuple(sorted((s[i], s[i+1])))] += 1
+            # edges[(s[i+1], s[i])] += 1
+
+    layout = []
+    degree = {c: 0 for c in chars}
+    print(edges.items())
+    for (u, v), _ in sorted(edges.items(), key=lambda tup: -tup[1]):
+        print(u, v)
+        if degree[u] >= 2 or degree[v] >= 2:
+            continue
+        layout.append((u, v))
+        degree[u] += 1
+        degree[v] += 1
+
+    print(layout)
+
+
+
 
 class CompileCtx:
     def __init__(self, arch, tape_size, cell_bytes, stack_size):
@@ -83,11 +106,11 @@ class CompileCtx:
                     section .text
                     main:
                     mov rcx, {self.tape_size // 8 + 1}
-                    .z:
+                    e:
                     mov qword [rsp], 0
-                    sub rsp, 8
+                    sub rsp, 0b1000
                     dec rcx
-                    jnz .z
+                    jne e
                     mov {self.dp}, rsp
                     """
                     ),
@@ -101,17 +124,17 @@ class CompileCtx:
                     syscall
                     c:
                     test rax, rax
-                    jnz .ret
+                    jne r
                     mov {self.addrmode} [{self.dp}], 0
-                    .ret:
+                    r:
                     ret
                     """
                     ),
                 ),
             ]
             self.snippets = dict(snippets)
-            # sort to keep it deterministic for now
-            chars = sorted(list(set("".join(s for s in self.snippets.values()))))
+            chars = "dsycalmovjnext[ri], 1\n0.:6qwb327ugp5"
+            assert len(chars) == len(set("".join(s for s in self.snippets.values())))
             self.alphabet = dict(zip(chars, range(len(chars))))
         elif arch == "arm":
             raise NotImplementedError
