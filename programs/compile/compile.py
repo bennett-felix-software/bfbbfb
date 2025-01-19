@@ -18,6 +18,16 @@ from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT, OUT_N, OUT_S, SHF, ZERO, o
 # <0> should always be set to 0 (or at least very transiently not)
 
 
+ST = -2
+GPI = -1
+G0 = 0
+PI = 1
+TMP1 = 2
+TMP2 = 3
+TMP3 = 4
+M0 = 5
+
+
 class CompileCtx:
     def __init__(self, arch, tape_size, cell_bytes, stack_size):
         self.tape_size = tape_size
@@ -125,7 +135,7 @@ class CompileCtx:
                 OUT(),  # output char
                 SHF(1),  # go to next char
             ),  # we are now at the 0 after the snippet
-            SHF(-1), # go back onto the end of the snippet
+            SHF(-1),  # go back onto the end of the snippet
             # go back n snippets
             *[
                 LOOP(
@@ -133,8 +143,8 @@ class CompileCtx:
                 ),
                 SHF(-1),  # go onto previous snippet
             ]
-            * n_skips, # we are now after the first snippet since we printed one
-            SHF(-1), # go onto the end of the first snippet
+            * n_skips,  # we are now after the first snippet since we printed one
+            SHF(-1),  # go onto the end of the first snippet
             LOOP(
                 SHF(-1),  # go back past the first snippet
             ),  # we are now at t3
@@ -165,7 +175,7 @@ class CompileCtx:
             s = self.snippets[key]
             for c in s:
                 dsl += [
-                    ADD(ord(c)), # put the char value in the cell
+                    ADD(ord(c)),  # put the char value in the cell
                     SHF(1),  # go to next
                 ]
             dsl.append(
@@ -235,39 +245,29 @@ class CompileCtx:
             SHF(*off(ST, G0)),
         ]
 
-    def EMIT_INCREMENT_DP(self):
+    def emit_increment_dp(self):
         return self.emit_snippet("increment_dp")
 
-    def EMIT_DECREMENT_DP(self):
+    def emit_decrement_dp(self):
         return self.emit_snippet("decrement_dp")
 
-    def EMIT_INCREMENT_TAPE(self):
+    def emit_increment_tape(self):
         return self.emit_snippet("increment_tape")
 
-    def EMIT_DECREMENT_TAPE(self):
+    def emit_decrement_tape(self):
         return self.emit_snippet("decrement_tape")
 
-    def EMIT_OUTPUT(self):
+    def emit_output(self):
         return self.emit_snippet("output")
 
-    def EMIT_INPUT(self):
+    def emit_input(self):
         return self.emit_snippet("input")
 
-    def EMIT_HEADER(self):
+    def emit_header(self):
         return self.emit_snippet("header")
 
-    def EMIT_FOOTER(self):
+    def emit_footer(self):
         return self.emit_snippet("footer")
-
-
-ST = -2
-GPI = -1
-G0 = 0
-PI = 1
-TMP1 = 2
-TMP2 = 3
-TMP3 = 4
-M0 = 5
 
 
 def add_to_stack():
@@ -373,19 +373,19 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
     cc = CompileCtx(arch, int(tape_size), int(cell_bytes), int(stack_size))
     return [
         *cc.init_tape(),
-        *cc.EMIT_HEADER(),
+        *cc.emit_header(),
         SHF(*off(G0, PI)),  # move to program_in
         IN(),  # get in
         LOOP(  # main loop, switch on all possible inputs
-            *if_eq_then(">",*cc.EMIT_INCREMENT_DP()),
-            *if_eq_then("<",*cc.EMIT_DECREMENT_DP()),
-            *if_eq_then("+",*cc.EMIT_INCREMENT_TAPE()),
-            *if_eq_then("-",*cc.EMIT_DECREMENT_TAPE()),
-            *if_eq_then(".",*cc.EMIT_OUTPUT()),
-            *if_eq_then(",",*cc.EMIT_INPUT()),
+            *if_eq_then(">", *cc.emit_increment_dp()),
+            *if_eq_then("<", *cc.emit_decrement_dp()),
+            *if_eq_then("+", *cc.emit_increment_tape()),
+            *if_eq_then("-", *cc.emit_decrement_tape()),
+            *if_eq_then(".", *cc.emit_output()),
+            *if_eq_then(",", *cc.emit_input()),
             *if_eq_then("[", *cc.begin_loop()),
             *if_eq_then("]", *cc.end_loop()),
             IN(),
         ),
-        *cc.EMIT_FOOTER(),
+        *cc.emit_footer(),
     ]
