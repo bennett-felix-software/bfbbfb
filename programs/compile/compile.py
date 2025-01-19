@@ -1,9 +1,6 @@
-from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT_S, SHF, ZERO, off, OUT_N, OUT
 import textwrap
-DP = {
-    "x86": "r12",
-    "arm": "X19",
-}
+
+from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT, OUT_N, OUT_S, SHF, ZERO, off
 
 # !! STACK STRUCTURE !!
 #
@@ -20,13 +17,193 @@ DP = {
 # +-------+------------+--------------+-----+-------+----+----+----+--------+
 # <0> should always be set to 0 (or at least very transiently not)
 
-ST=-2
-GPI=-1
-G0=0
-PI=1
-TMP1=2
-TMP2=3
-TMP3=4
+
+class CompileCtx:
+    def __init__(self, arch, tape_size, cell_bytes, stack_size):
+        self.arch = arch
+        self.dp = {
+            "x86": "r12",
+            "arm": "X19",
+        }[arch]
+
+        self.tape_size = tape_size
+
+        self.cell_bytes = cell_bytes
+        match cell_bytes:
+            case 1:
+                self.addrmode = "byte"
+            case 2:
+                self.addrmode = "word"
+            case 4:
+                self.addrmode = "dword"
+            case 8:
+                self.addrmode = "qword"
+
+        self.stack_size = stack_size
+
+    def begin_loop(self):
+        """
+        STARTS AT <0>
+        USES      tmp1, tmp2, tmp3
+        ENDS AT   <0>
+        """
+        body = {
+            "x86": f"    cmp {self.addrmode} [{self.dp}], 0\n    je e",
+            "arm": "unimplemented",
+        }[self.arch]
+        return [
+            SHF(*off(G0, GPI)),  # go to global parenthesis index
+            # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
+            ADD(1),
+            COPY(*off(GPI, GPI, TMP1, ST)),
+            SHF(
+                *off(GPI, ST)
+            ),  # move to stack temp, as per add_to_stack calling convention
+            *add_to_stack(),  # add it to the stack
+            SHF(*off(ST, TMP1)),  # move into TMP1
+            OUT_S("s"),
+            OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
+            OUT_S(":\n" + body),  # emit end of label
+            OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
+            OUT_S("\n"),  # move to next line
+            SHF(*off(TMP1, G0)),  # end back at index 0
+        ]
+
+    def end_loop(self):
+        """
+        STARTS AT <0>
+        USES      tmp1, tmp2
+        ENDS AT   <0>
+        """
+        body = {
+            "x86": f"    cmp {self.addrmode} [{self.dp}], 0\n    jne s",
+            "arm": "unimplemented",
+        }[self.arch]
+        return [
+            SHF(*off(G0, ST)),  # go to stack temp
+            *pop_from_stack(),  # pop from the stack
+            SHF(*off(ST, TMP1)),
+            OUT_S("e"),
+            OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
+            OUT_S(":\n" + body),  # emit end of label
+            OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
+            OUT_S("\n"),  # move to next line
+            SHF(*off(TMP1, ST)),
+            ZERO(),
+            SHF(*off(ST, G0)),
+        ]
+
+    def EMIT_INCREMENT_DP(self):
+        return OUT_S(
+            {
+                "x86": f"    add {self.dp}, {self.cell_bytes}\n",
+                "arm": f"    addi {self.dp}, {self.dp}, #{self.cell_bytes}\n",
+                "bf": ">",
+            }[self.arch]
+        )
+
+    def EMIT_DECREMENT_DP(self):
+        return OUT_S(
+            {
+                "x86": f"    sub {self.dp}, {self.cell_bytes}\n",
+                "arm": f"    subi {self.dp}, {self.dp}, #{self.cell_bytes}\n",
+                "bf": "<",
+            }[self.arch]
+        )
+
+    def EMIT_INCREMENT_TAPE(self):
+        return OUT_S(
+            {
+                "x86": f"    add {self.cell_bytes} [{self.dp}], 1\n",
+                "arm": "unimplemented",
+                "bf": "+",
+            }[self.arch]
+        )
+
+    def EMIT_DECREMENT_TAPE(self):
+        return OUT_S(
+            {
+                "x86": f"    sub {self.cell_bytes} [{self.dp}], 1\n",
+                "arm": "unimplemented",
+                "bf": "+",
+            }[self.arch]
+        )
+
+    def EMIT_OUTPUT(self):
+        return OUT_S(
+            {
+                "x86": f"""\
+        mov rdi, 1      ; fd    = stdout
+        lea rsi, [{self.dp}] ; buf   = tape[dp]
+        mov rdx, 1      ; count = 1
+        mov rax, 1      ; call  = sys_write
+        syscall
+    """,
+                "arm": "unimplemented",
+                "bf": ".",
+            }[self.arch]
+        )
+
+    def EMIT_INPUT(self):
+        return OUT_S(
+            {
+                "x86": f"""\
+        mov rdi, 0      ; fd    = stdin
+        lea rsi, [{self.dp}] ; buf   = tape[dp]
+        mov rdx, 1      ; count = 1
+        mov rax, 0      ; call  = sys_read
+        syscall
+        call check_return
+    """,
+                "arm": "unimplemented",
+                "bf": ",",
+            }[self.arch]
+        )
+
+    def EMIT_HEADER(self):
+        return OUT_S(
+            {
+                "x86": textwrap.dedent(f"""\
+                    global main
+                    section .text
+                    main:
+                        mov rcx, {self.tape_size // 8 + 1}
+                    .zeroize_stack:
+                        mov qword [rsp], 0
+                        sub rsp, 8
+                        dec rcx
+                        jnz .zeroize_stack
+                        mov {self.dp}, rsp
+                    """)
+            }[self.arch]
+        )
+
+    def EMIT_FOOTER(self):
+        return OUT_S(
+            {
+                "x86": textwrap.dedent(f"""\
+                    mov rax, 60
+                    mov rdi, 0
+                    syscall
+                check_return:
+                    test rax, rax
+                    jnz .ret
+                    mov {self.addrmode} [{self.dp}], 0
+                .ret:
+                    ret
+                """)
+            }[self.arch]
+        )
+
+
+ST = -2
+GPI = -1
+G0 = 0
+PI = 1
+TMP1 = 2
+TMP2 = 3
+TMP3 = 4
+
 
 def add_to_stack():
     """
@@ -108,177 +285,6 @@ def if_eq_then(comp, *instr):
     ]
 
 
-def begin_loop(arch, cell_bytes):
-    """
-    STARTS AT <0>
-    USES      tmp1, tmp2, tmp3
-    ENDS AT   <0>
-    """
-    if arch == "bf":
-        return "["
-
-    dp = DP[arch]
-    body = {
-        "x86": f"    cmp {addrmode(cell_bytes)} [{dp}], 0\n    je e",
-        "arm": "unimplemented",
-    }
-    return [
-        SHF(*off(G0, GPI)),  # go to global parenthesis index
-        # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
-        ADD(1),  
-        COPY(*off(GPI, GPI, TMP1, ST)),
-        SHF(*off(GPI, ST)),  # move to stack temp, as per add_to_stack calling convention
-        *add_to_stack(),  # add it to the stack
-        SHF(*off(ST, TMP1)), # move into TMP1
-        OUT_S("s"),
-        OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
-        OUT_S(":\n" + body[arch]),  # emit end of label
-        OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
-        OUT_S("\n"),  # move to next line
-        SHF(*off(TMP1, G0)),  # end back at index 0
-    ]
-
-
-def end_loop(arch, cell_bytes):
-    """
-    STARTS AT <0>
-    USES      tmp1, tmp2
-    ENDS AT   <0>
-    """
-    if arch == "bf":
-        return "]"
-
-    dp = DP[arch]
-    body = {
-        "x86": f"    cmp {addrmode(cell_bytes)} [{dp}], 0\n    jne s",
-        "arm": "unimplemented",
-    }
-    return [
-        SHF(*off(G0, ST)),  # go to stack temp
-        *pop_from_stack(),  # pop from the stack
-        SHF(*off(ST, TMP1)),
-        OUT_S("e"),
-        OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
-        OUT_S(":\n" + body[arch]),  # emit end of label
-        OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
-        OUT_S("\n"),  # move to next line
-        SHF(*off(TMP1, ST)),
-        ZERO(),
-        SHF(*off(ST, G0))
-    ]
-
-
-def EMIT_INCREMENT_DP(arch, cell_bytes):
-    dp = DP[arch]
-    return OUT_S(
-        {
-            "x86": f"    add {dp}, {cell_bytes}\n",
-            "arm": f"    addi {dp}, {dp}, #{cell_bytes}\n",
-            "bf": ">",
-        }[arch]
-    )
-
-
-def EMIT_DECREMENT_DP(arch, cell_bytes):
-    dp = DP[arch]
-    return OUT_S(
-        {
-            "x86": f"    sub {dp}, {cell_bytes}\n",
-            "arm": f"    subi {dp}, {dp}, #{cell_bytes}\n",
-            "bf": "<",
-        }[arch]
-    )
-
-
-def addrmode(cell_bytes):
-    match cell_bytes:
-        case 1:
-            return "byte"
-        case 2:
-            return "word"
-        case 4:
-            return "dword"
-        case 8:
-            return "qword"
-
-
-def EMIT_INCREMENT_TAPE(arch, cell_bytes):
-    dp = DP[arch]
-    return OUT_S(
-        {
-            "x86": f"    add {addrmode(cell_bytes)} [{dp}], 1\n",
-            "arm": "unimplemented",
-            "bf": "+",
-        }[arch]
-    )
-
-
-def EMIT_DECREMENT_TAPE(arch, cell_bytes):
-    dp = DP[arch]
-    return OUT_S(
-        {
-            "x86": f"    sub {addrmode(cell_bytes)} [{dp}], 1\n",
-            "arm": "unimplemented",
-            "bf": "+",
-        }[arch]
-    )
-
-
-def EMIT_OUTPUT(arch):
-    dp = DP[arch]
-    return OUT_S(
-        {
-            "x86": f"""\
-    mov rdi, 1      ; fd    = stdout
-    lea rsi, [{dp}] ; buf   = tape[dp]
-    mov rdx, 1      ; count = 1
-    mov rax, 1      ; call  = sys_write
-    syscall
-""",
-            "arm": "unimplemented",
-            "bf": ".",
-        }[arch]
-    )
-
-
-def EMIT_INPUT(arch):
-    dp = DP[arch]
-    return OUT_S(
-        {
-            "x86": f"""\
-    mov rdi, 0      ; fd    = stdin
-    lea rsi, [{dp}] ; buf   = tape[dp]
-    mov rdx, 1      ; count = 1
-    mov rax, 0      ; call  = sys_read
-    syscall
-    call check_return
-""",
-            "arm": "unimplemented",
-            "bf": ",",
-        }[arch]
-    )
-
-
-def EMIT_HEADER(arch, tape_bytes):
-    dp = DP[arch]
-    return OUT_S(
-        {
-            "x86": textwrap.dedent(f"""\
-                global main
-                section .text
-                main:
-                    mov rcx, {tape_bytes // 8 + 1}
-                .zeroize_stack:
-                    mov qword [rsp], 0
-                    sub rsp, 8
-                    dec rcx
-                    jnz .zeroize_stack
-                    mov {dp}, rsp
-                """)
-        }[arch]
-    )
-
-
 def init_stack(stack_size):
     """
     STARTS AT: stack end
@@ -291,59 +297,46 @@ def init_stack(stack_size):
             SHF(1),
         ]
         * stack_size,
-        SHF(2)
+        SHF(2),
     ]
 
-
-def EMIT_FOOTER(arch, cell_bytes):
-    return OUT_S(
-        {
-            "x86": textwrap.dedent(f"""\
-                mov rax, 60
-                mov rdi, 0
-                syscall
-            check_return:
-                test rax, rax
-                jnz .ret
-                mov {addrmode(cell_bytes)} [{DP[arch]}], 0
-            .ret:
-                ret
-            """)
-        }[arch]
-    )
 
 def print_tape(off1, off2):
     return [
         SHF(off1),
-        *sum([[
-            ADD(33),
-            OUT(),
-            ADD(-33),
-            SHF(1),
-        ] for _ in range(off1, off2+1)], []),
+        *sum(
+            [
+                [
+                    ADD(33),
+                    OUT(),
+                    ADD(-33),
+                    SHF(1),
+                ]
+                for _ in range(off1, off2 + 1)
+            ],
+            [],
+        ),
         SHF(-off2),
     ]
 
 
 def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
-    tape_size = int(tape_size)
-    cell_bytes = int(cell_bytes)
-    stack_size = int(stack_size)
+    cc = CompileCtx(arch, int(tape_size), int(cell_bytes), int(stack_size))
     return [
-        EMIT_HEADER(arch, tape_size * cell_bytes),
-        *init_stack(stack_size),
+        cc.EMIT_HEADER(),
+        *init_stack(int(stack_size)),
         SHF(*off(G0, PI)),  # move to program_in
         IN(),  # get in
         LOOP(  # main loop, switch on all possible inputs
-            *if_eq_then(">", EMIT_INCREMENT_DP(arch, cell_bytes)),
-            *if_eq_then("<", EMIT_DECREMENT_DP(arch, cell_bytes)),
-            *if_eq_then("+", EMIT_INCREMENT_TAPE(arch, cell_bytes)),
-            *if_eq_then("-", EMIT_DECREMENT_TAPE(arch, cell_bytes)),
-            *if_eq_then(".", EMIT_OUTPUT(arch)),
-            *if_eq_then(",", EMIT_INPUT(arch)),
-            *if_eq_then("[", *begin_loop(arch, cell_bytes)),
-            *if_eq_then("]", *end_loop(arch, cell_bytes)),
+            *if_eq_then(">", cc.EMIT_INCREMENT_DP()),
+            *if_eq_then("<", cc.EMIT_DECREMENT_DP()),
+            *if_eq_then("+", cc.EMIT_INCREMENT_TAPE()),
+            *if_eq_then("-", cc.EMIT_DECREMENT_TAPE()),
+            *if_eq_then(".", cc.EMIT_OUTPUT()),
+            *if_eq_then(",", cc.EMIT_INPUT()),
+            *if_eq_then("[", *cc.begin_loop()),
+            *if_eq_then("]", *cc.end_loop()),
             IN(),
         ),
-        EMIT_FOOTER(arch, cell_bytes),
+        cc.EMIT_FOOTER(),
     ]
