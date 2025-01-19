@@ -71,35 +71,35 @@ class CompileCtx:
                     mov rdx, 1
                     mov rax, 0
                     syscall
-                    call check_return
+                    call c
                     """
                     ),
                 ),
                 (
                     "header",
-                    textwrap.dedent(
+                    textwrap.dedent(  # zeroize the stack and put the data pointer at the base
                         f"""\
                     global main
                     section .text
                     main:
                     mov rcx, {self.tape_size // 8 + 1}
-                    .zeroize_stack:
+                    .z:
                     mov qword [rsp], 0
                     sub rsp, 8
                     dec rcx
-                    jnz .zeroize_stack
+                    jnz .z
                     mov {self.dp}, rsp
                     """
                     ),
                 ),
                 (
                     "footer",
-                    textwrap.dedent(
+                    textwrap.dedent(  # exit, stores fn to check sys_read result
                         f"""\
                     mov rax, 60
                     mov rdi, 0
                     syscall
-                    check_return:
+                    c:
                     test rax, rax
                     jnz .ret
                     mov {self.addrmode} [{self.dp}], 0
