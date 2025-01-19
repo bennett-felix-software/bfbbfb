@@ -20,26 +20,64 @@ from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT, OUT_N, OUT_S, SHF, ZERO, o
 
 class CompileCtx:
     def __init__(self, arch, tape_size, cell_bytes, stack_size):
-        self.arch = arch
-        self.dp = {
-            "x86": "r12",
-            "arm": "X19",
-        }[arch]
-
         self.tape_size = tape_size
 
         self.cell_bytes = cell_bytes
-        match cell_bytes:
-            case 1:
-                self.addrmode = "byte"
-            case 2:
-                self.addrmode = "word"
-            case 4:
-                self.addrmode = "dword"
-            case 8:
-                self.addrmode = "qword"
+        self.addrmode = {1: "byte", 2: "word", 4: "dword", 8: "qword"}[cell_bytes]
 
         self.stack_size = stack_size
+
+        self.arch = arch
+        self.dp = {"x86": "r12", "arm": "X19"}[arch]
+        if arch == "x86":
+            self.asm_snippets = {
+                "check_loop_start": f"    cmp {self.addrmode} [{self.dp}], 0\n    je e",
+                "check_loop_end": f"    cmp {self.addrmode} [{self.dp}], 0\n    jne s",
+                "increment_dp": f"    add {self.dp}, {self.cell_bytes}\n",
+                "decrement_dp": f"    sub {self.dp}, {self.cell_bytes}\n",
+                "increment_tape": f"    add {self.cell_bytes} [{self.dp}], 1\n",
+                "decrement_tape": f"    sub {self.cell_bytes} [{self.dp}], 1\n",
+                "output": f"""\
+        mov rdi, 1      ; fd    = stdout
+        lea rsi, [{self.dp}] ; buf   = tape[dp]
+        mov rdx, 1      ; count = 1
+        mov rax, 1      ; call  = sys_write
+        syscall
+    """,
+                "input": f"""\
+        mov rdi, 0      ; fd    = stdin
+        lea rsi, [{self.dp}] ; buf   = tape[dp]
+        mov rdx, 1      ; count = 1
+        mov rax, 0      ; call  = sys_read
+        syscall
+        call check_return
+    """,
+                "header": textwrap.dedent(f"""\
+                    global main
+                    section .text
+                    main:
+                        mov rcx, {self.tape_size // 8 + 1}
+                    .zeroize_stack:
+                        mov qword [rsp], 0
+                        sub rsp, 8
+                        dec rcx
+                        jnz .zeroize_stack
+                        mov {self.dp}, rsp
+                    """),
+                "footer": textwrap.dedent(f"""\
+                    mov rax, 60
+                    mov rdi, 0
+                    syscall
+                check_return:
+                    test rax, rax
+                    jnz .ret
+                    mov {self.addrmode} [{self.dp}], 0
+                .ret:
+                    ret
+                """),
+            }
+        elif arch == "arm":
+            raise NotImplementedError
 
     def begin_loop(self):
         """
@@ -47,10 +85,6 @@ class CompileCtx:
         USES      tmp1, tmp2, tmp3
         ENDS AT   <0>
         """
-        body = {
-            "x86": f"    cmp {self.addrmode} [{self.dp}], 0\n    je e",
-            "arm": "unimplemented",
-        }[self.arch]
         return [
             SHF(*off(G0, GPI)),  # go to global parenthesis index
             # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
@@ -63,7 +97,7 @@ class CompileCtx:
             SHF(*off(ST, TMP1)),  # move into TMP1
             OUT_S("s"),
             OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
-            OUT_S(":\n" + body),  # emit end of label
+            OUT_S(":\n" + self.asm_snippets["check_loop_start"]),  # emit end of label
             OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
             OUT_S("\n"),  # move to next line
             SHF(*off(TMP1, G0)),  # end back at index 0
@@ -75,17 +109,13 @@ class CompileCtx:
         USES      tmp1, tmp2
         ENDS AT   <0>
         """
-        body = {
-            "x86": f"    cmp {self.addrmode} [{self.dp}], 0\n    jne s",
-            "arm": "unimplemented",
-        }[self.arch]
         return [
             SHF(*off(G0, ST)),  # go to stack temp
             *pop_from_stack(),  # pop from the stack
             SHF(*off(ST, TMP1)),
             OUT_S("e"),
             OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
-            OUT_S(":\n" + body),  # emit end of label
+            OUT_S(":\n" + self.asm_snippets["check_loop_end"]),  # emit end of label
             OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
             OUT_S("\n"),  # move to next line
             SHF(*off(TMP1, ST)),
@@ -94,100 +124,28 @@ class CompileCtx:
         ]
 
     def EMIT_INCREMENT_DP(self):
-        return OUT_S(
-            {
-                "x86": f"    add {self.dp}, {self.cell_bytes}\n",
-                "arm": f"    addi {self.dp}, {self.dp}, #{self.cell_bytes}\n",
-            }[self.arch]
-        )
+        return OUT_S(self.asm_snippets["increment_dp"])
 
     def EMIT_DECREMENT_DP(self):
-        return OUT_S(
-            {
-                "x86": f"    sub {self.dp}, {self.cell_bytes}\n",
-                "arm": f"    subi {self.dp}, {self.dp}, #{self.cell_bytes}\n",
-            }[self.arch]
-        )
+        return OUT_S(self.asm_snippets["decrement_dp"])
 
     def EMIT_INCREMENT_TAPE(self):
-        return OUT_S(
-            {
-                "x86": f"    add {self.cell_bytes} [{self.dp}], 1\n",
-                "arm": "unimplemented",
-            }[self.arch]
-        )
+        return OUT_S(self.asm_snippets["increment_tape"])
 
     def EMIT_DECREMENT_TAPE(self):
-        return OUT_S(
-            {
-                "x86": f"    sub {self.cell_bytes} [{self.dp}], 1\n",
-                "arm": "unimplemented",
-            }[self.arch]
-        )
+        return OUT_S(self.asm_snippets["decrement_tape"])
 
     def EMIT_OUTPUT(self):
-        return OUT_S(
-            {
-                "x86": f"""\
-        mov rdi, 1      ; fd    = stdout
-        lea rsi, [{self.dp}] ; buf   = tape[dp]
-        mov rdx, 1      ; count = 1
-        mov rax, 1      ; call  = sys_write
-        syscall
-    """,
-                "arm": "unimplemented",
-            }[self.arch]
-        )
+        return OUT_S(self.asm_snippets["output"])
 
     def EMIT_INPUT(self):
-        return OUT_S(
-            {
-                "x86": f"""\
-        mov rdi, 0      ; fd    = stdin
-        lea rsi, [{self.dp}] ; buf   = tape[dp]
-        mov rdx, 1      ; count = 1
-        mov rax, 0      ; call  = sys_read
-        syscall
-        call check_return
-    """,
-                "arm": "unimplemented",
-            }[self.arch]
-        )
+        return OUT_S(self.asm_snippets["input"])
 
     def EMIT_HEADER(self):
-        return OUT_S(
-            {
-                "x86": textwrap.dedent(f"""\
-                    global main
-                    section .text
-                    main:
-                        mov rcx, {self.tape_size // 8 + 1}
-                    .zeroize_stack:
-                        mov qword [rsp], 0
-                        sub rsp, 8
-                        dec rcx
-                        jnz .zeroize_stack
-                        mov {self.dp}, rsp
-                    """)
-            }[self.arch]
-        )
+        return OUT_S(self.asm_snippets["header"])
 
     def EMIT_FOOTER(self):
-        return OUT_S(
-            {
-                "x86": textwrap.dedent(f"""\
-                    mov rax, 60
-                    mov rdi, 0
-                    syscall
-                check_return:
-                    test rax, rax
-                    jnz .ret
-                    mov {self.addrmode} [{self.dp}], 0
-                .ret:
-                    ret
-                """)
-            }[self.arch]
-        )
+        return OUT_S(self.asm_snippets["footer"])
 
 
 ST = -2
