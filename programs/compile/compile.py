@@ -31,29 +31,34 @@ class CompileCtx:
         self.dp = {"x86": "r12", "arm": "X19"}[arch]
         if arch == "x86":
             self.asm_snippets = {
-                "check_loop_start": f"    cmp {self.addrmode} [{self.dp}], 0\n    je e",
-                "check_loop_end": f"    cmp {self.addrmode} [{self.dp}], 0\n    jne s",
-                "increment_dp": f"    add {self.dp}, {self.cell_bytes}\n",
-                "decrement_dp": f"    sub {self.dp}, {self.cell_bytes}\n",
-                "increment_tape": f"    add {self.cell_bytes} [{self.dp}], 1\n",
-                "decrement_tape": f"    sub {self.cell_bytes} [{self.dp}], 1\n",
+                # Ordered in terms of commonness of use. More common operations
+                # are closer to <0> so we have to travel less far to get to them.
+                #
+                # Also avoid indentation and comments because it takes longer to print
+                # in brainfuck
+                "increment_tape": f"add {self.cell_bytes} [{self.dp}], 1\n",
+                "decrement_tape": f"sub {self.cell_bytes} [{self.dp}], 1\n",
+                "increment_dp": f"add {self.dp}, {self.cell_bytes}\n",
+                "decrement_dp": f"sub {self.dp}, {self.cell_bytes}\n",
+                "check_loop_start": f"cmp {self.addrmode} [{self.dp}], 0\nje e",
+                "check_loop_end": f"cmp {self.addrmode} [{self.dp}], 0\njne s",
                 "output": textwrap.dedent(
                     f"""\
-                        mov rdi, 1      ; fd    = stdout
-                        lea rsi, [{self.dp}] ; buf   = tape[dp]
-                        mov rdx, 1      ; count = 1
-                        mov rax, 1      ; call  = sys_write
-                        syscall
+                    mov rdi, 1
+                    lea rsi, [{self.dp}]
+                    mov rdx, 1
+                    mov rax, 1
+                    syscall
                     """
                 ),
                 "input": textwrap.dedent(
                     f"""\
-                        mov rdi, 0      ; fd    = stdin
-                        lea rsi, [{self.dp}] ; buf   = tape[dp]
-                        mov rdx, 1      ; count = 1
-                        mov rax, 0      ; call  = sys_read
-                        syscall
-                        call check_return
+                    mov rdi, 0
+                    lea rsi, [{self.dp}]
+                    mov rdx, 1
+                    mov rax, 0
+                    syscall
+                    call check_return
                     """
                 ),
                 "header": textwrap.dedent(
@@ -61,31 +66,47 @@ class CompileCtx:
                     global main
                     section .text
                     main:
-                        mov rcx, {self.tape_size // 8 + 1}
+                    mov rcx, {self.tape_size // 8 + 1}
                     .zeroize_stack:
-                        mov qword [rsp], 0
-                        sub rsp, 8
-                        dec rcx
-                        jnz .zeroize_stack
-                        mov {self.dp}, rsp
+                    mov qword [rsp], 0
+                    sub rsp, 8
+                    dec rcx
+                    jnz .zeroize_stack
+                    mov {self.dp}, rsp
                     """
                 ),
                 "footer": textwrap.dedent(
                     f"""\
-                        mov rax, 60
-                        mov rdi, 0
-                        syscall
+                    mov rax, 60
+                    mov rdi, 0
+                    syscall
                     check_return:
-                        test rax, rax
-                        jnz .ret
-                        mov {self.addrmode} [{self.dp}], 0
+                    test rax, rax
+                    jnz .ret
+                    mov {self.addrmode} [{self.dp}], 0
                     .ret:
-                        ret
+                    ret
                     """
                 ),
             }
         elif arch == "arm":
             raise NotImplementedError
+
+    def init_tape(self):
+        """
+        STARTS AT: stack end
+        ENDS AT: <0>
+        """
+        return [
+            # init the stack
+            SHF(1),
+            *[
+                ADD(1),
+                SHF(1),
+            ]
+            * self.stack_size,
+            SHF(2),
+        ]
 
     def begin_loop(self):
         """
@@ -245,22 +266,6 @@ def if_eq_then(comp, *instr):
     ]
 
 
-def init_stack(stack_size):
-    """
-    STARTS AT: stack end
-    ENDS AT: <0>
-    """
-    return [
-        SHF(1),
-        *[
-            ADD(1),
-            SHF(1),
-        ]
-        * stack_size,
-        SHF(2),
-    ]
-
-
 def print_tape(off1, off2):
     return [
         SHF(off1),
@@ -284,7 +289,7 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
     cc = CompileCtx(arch, int(tape_size), int(cell_bytes), int(stack_size))
     return [
         cc.EMIT_HEADER(),
-        *init_stack(int(stack_size)),
+        *cc.init_tape(),
         SHF(*off(G0, PI)),  # move to program_in
         IN(),  # get in
         LOOP(  # main loop, switch on all possible inputs
