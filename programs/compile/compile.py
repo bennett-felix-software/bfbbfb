@@ -98,7 +98,6 @@ class CompileCtx:
             {
                 "x86": f"    add {self.dp}, {self.cell_bytes}\n",
                 "arm": f"    addi {self.dp}, {self.dp}, #{self.cell_bytes}\n",
-                "bf": ">",
             }[self.arch]
         )
 
@@ -107,7 +106,6 @@ class CompileCtx:
             {
                 "x86": f"    sub {self.dp}, {self.cell_bytes}\n",
                 "arm": f"    subi {self.dp}, {self.dp}, #{self.cell_bytes}\n",
-                "bf": "<",
             }[self.arch]
         )
 
@@ -116,7 +114,6 @@ class CompileCtx:
             {
                 "x86": f"    add {self.cell_bytes} [{self.dp}], 1\n",
                 "arm": "unimplemented",
-                "bf": "+",
             }[self.arch]
         )
 
@@ -125,7 +122,6 @@ class CompileCtx:
             {
                 "x86": f"    sub {self.cell_bytes} [{self.dp}], 1\n",
                 "arm": "unimplemented",
-                "bf": "+",
             }[self.arch]
         )
 
@@ -140,7 +136,6 @@ class CompileCtx:
         syscall
     """,
                 "arm": "unimplemented",
-                "bf": ".",
             }[self.arch]
         )
 
@@ -156,7 +151,6 @@ class CompileCtx:
         call check_return
     """,
                 "arm": "unimplemented",
-                "bf": ",",
             }[self.arch]
         )
 
