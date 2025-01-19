@@ -15,3 +15,8 @@ bfbbfb = "bfbbfb.run:run"
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+packages=["bfbbfb"]
+ext-modules = [
+  { name="bfbbfb.bf_cpp", sources=["bf.cpp"] }
+]

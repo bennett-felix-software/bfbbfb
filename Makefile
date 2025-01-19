@@ -21,6 +21,10 @@ clean:
 	rm a.out
 	rm compile.bf
 
+make_so:
+	g++ -c -fPIC bfbbfb/bf.c++ -o bfbbfb/bf.o
+	g++ -shared -Wl,-soname,bf.so -o bfbbfb/bf.so bfbbfb/bf.o
+
 
 
 

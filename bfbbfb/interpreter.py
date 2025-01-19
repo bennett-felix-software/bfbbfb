@@ -1,5 +1,5 @@
 import sys
-
+from bfbbfb import bf_cpp
 
 class Interpreter:
     def __init__(
@@ -47,17 +47,30 @@ class BFInterpreter(Interpreter):
         cell_size=1,
         debug=False,
         real_stdin=False,
+        use_clib=True
     ):
         super().__init__(set_tape, set_input, tape_size, cell_size, debug)
         self.real_stdin = real_stdin
+        self.use_clib = use_clib
 
     def exec(self, *program):
+        if self.use_clib:
+            self._exec_c(*program)
+        else:
+            self._exec_py(*program)
+        
+    def _exec_py(self, *program):
         for inst in program:
             if self.debug:
                 print(repr(inst))
             self._exec_brainfuck(str(inst))
             if self.debug:
                 print(self.disp(self.tape_size))
+
+    def _exec_c(self, *program):
+
+        program_str = "".join(map(str, program))
+        bf_cpp.execute(self.tape_size, self.cell_size, program_str)
 
     def _exec_brainfuck(self, code):
         stack = []

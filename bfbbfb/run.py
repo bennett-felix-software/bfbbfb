@@ -34,8 +34,8 @@ def run():
     run_parser.add_argument(
         "--raw", action="store_true", help="treat the program as a raw brainfuck string"
     )
-    run_parser.add_argument(*width_args, **width_kwargs)
-    run_parser.add_argument(*length_args, **length_kwargs)
+    run_parser.add_argument("--width", choices=[1, 2, 4, 8], default=1, help="set width of cell in bytes")
+    run_parser.add_argument("--length", type=int, default=30000, help="set tape length")
     run_parser.add_argument(
         "--print-tape",
         type=int,
@@ -43,6 +43,7 @@ def run():
         help="how many cells of the tape to print when execution is finished",
         metavar="CELLS",
     )
+    run_parser.add_argument("--use-py", action="store_true", help="use a python interpreter instead of the c++ one")
     run_parser.add_argument("program", type=str, help="the program to run")
 
     dsl_parser.add_argument(
@@ -73,7 +74,10 @@ def run():
                     exit(1)
 
             i = BFInterpreter(
-                tape_size=namespace.length, cell_size=namespace.width, real_stdin=True
+                tape_size=namespace.length,
+                cell_size=namespace.width,
+                real_stdin=True,
+                use_clib=not namespace.use_py
             )
             i.exec(bf)
 
