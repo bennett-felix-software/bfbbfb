@@ -2,8 +2,29 @@ import sys
 from bfbbfb import bf_cpp
 
 class Interpreter:
+    """
+    Interpreter superclass defines properties that interpreters *must* have,
+    as well as implements some basic common functionality between them.
+
+    Constructor:
+    set_tape [list[int]|None]: if provided, sets the initial tape state
+    set_input [str]: sets the input tape for when , is read
+    tape_size [int]: sets the number of cells
+    cell_size [int]: sets the number of bytes per cell
+    debug [bool]: whether or not to print debug messages
+    
+    Properties:
+    dp (int): data pointer or cursor. Points to the currently selected cell.
+    itp (int): input tape pointer, is incremented as , is called
+    """
+    
     def __init__(
-        self, set_tape=None, set_input="", tape_size=30000, cell_size=1, debug=False
+        self,
+        set_tape=None,
+        set_input="",
+        tape_size=30000,
+        cell_size=1,
+        debug=False,
     ):
         if not set_tape:
             self.tape = [0 for _ in range(tape_size)]
@@ -20,6 +41,12 @@ class Interpreter:
         self.itp = 0
 
     def disp(self, cells=None):
+        """
+        disp displays either the first n cells or the entire tape.
+
+        cells (int|None): number of cells to display if provided, otherwise
+        will just display the entire tape.
+        """
         if not cells:
             cells = self.tape_size
         s = ""
@@ -27,9 +54,30 @@ class Interpreter:
             s += f"{'>' if i == self.dp else ' '}{self.tape[i]:3}"
         return s
 
+    def exec(self, *program):
+        """
+        exec executes a given program (list of *something*, should probably be
+        either brainfuck or something that compiles to brainfuck) on this
+        interpreter.
+
+        *program (*list[Any]): list of something to execute. What exactly it's
+        executing varies by the implementation of the interpreter (and what
+        exactly it's interpreting)
+        """
+        raise NotImplementedError()
 
 class DSLInterpreter(Interpreter):
+    """
+    DSLInterpreter interprets DSL programs. It does so by, for a given set of
+    DSL instructions, calls each of their `.exec` methods
+    """
+    
     def exec(self, *program):
+        """
+        Executes a given DSL program
+
+        *program (*list[Instruction]): list of DSL instructions to execute
+        """
         for inst in program:
             if self.debug:
                 print(repr(inst))
@@ -39,6 +87,18 @@ class DSLInterpreter(Interpreter):
 
 
 class BFInterpreter(Interpreter):
+    """
+    BFInterpreter interprets raw Brainfuck code. It can either do so by running
+    the python interpreter built into the class, or it can do so by calling a
+    C++ shared library that will execute it significantly faster. It also is
+    capable of reading real stdin instead of just reading off an input tape
+
+    Properties:
+    real_stdin [bool]: whether or not to read from a real stdin
+    use_clib [bool]: whether or not to execute the Brainfuck program using the
+    c++ library. This will use real stdin whether real_stdin is set or not.
+    """
+    
     def __init__(
         self,
         set_tape=None,
@@ -54,6 +114,11 @@ class BFInterpreter(Interpreter):
         self.use_clib = use_clib
 
     def exec(self, *program):
+        """
+        Executes a given Brainfuck program
+
+        *program (*list[str]): list of Brainfuck strings to execute
+        """
         if self.use_clib:
             self._exec_c(*program)
         else:
