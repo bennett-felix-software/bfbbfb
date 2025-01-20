@@ -252,12 +252,12 @@ class CompileCtx:
             *add_to_stack(),  # add it to the stack
             SHF(*off(ST, TMP1)),  # move into TMP1
             OUT_S("s"),
-            OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
+            OUT_N("a", *off(TMP1, GPI, TMP1, TMP2)),
             OUT_S(":\n"),  # emit end of label
             SHF(-2),  # move into <0>
             *self.emit_snippet("check_loop_start"),
             SHF(2),  # move back into t1
-            OUT_N("a", *off(TMP1, GPI, TMP1, TMP2, TMP3)),
+            OUT_N("a", *off(TMP1, GPI, TMP1, TMP2)),
             OUT_S("\n"),  # move to next line
             SHF(*off(TMP1, G0)),  # end back at index 0
         ]
@@ -273,12 +273,12 @@ class CompileCtx:
             *pop_from_stack(),  # pop from the stack
             SHF(*off(ST, TMP1)),
             OUT_S("e"),
-            OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
+            OUT_N("a", *off(TMP1, ST, TMP1, TMP2)),
             OUT_S(":\n"),  # emit end of label
             SHF(-2),  # move into <0>
             *self.emit_snippet("check_loop_end"),
             SHF(2),  # move back into t1
-            OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
+            OUT_N("a", *off(TMP1, ST, TMP1, TMP2)),
             OUT_S("\n"),  # move to next line
             SHF(*off(TMP1, ST)),
             ZERO(),
