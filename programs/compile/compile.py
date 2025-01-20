@@ -48,6 +48,63 @@ def optimize_alphabet_layout(ss: list[str]) -> str:
 
     print(layout)
 
+def x86_snippets(tape_size, cell_bytes):
+    add_postfix = {1: "b", 2: "w", 4: "l", 8: "q"}[cell_bytes]
+    cmp_postfix = {1: "b", 2: "w", 4: "l", 8: "q"}[cell_bytes]
+    dp = "%r12"
+    return dict([
+        ("increment_dp", f"add $1,{dp}\n"),
+        ("decrement_dp", f"sub $1,{dp}\n"),
+        ("increment_tape", f"add{add_postfix} $1,({dp})\n"),
+        ("decrement_tape", f"sub{add_postfix} $1,({dp})\n"),
+        ("check_loop_start", f"cmp{cmp_postfix} $0,({dp})\nje e"),
+        ("check_loop_end",   f"cmp{cmp_postfix} $0,({dp})\njne s"),
+        ("output", textwrap.dedent(f"""\
+            mov $1,%rdi
+            lea ({dp}),%rsi
+            mov $1,%rdx
+            mov $1,%rax
+            syscall
+            """),
+        ),
+        ("input", textwrap.dedent(f"""\
+            mov $0,%rdi
+            lea ({dp}),%rsi
+            mov $1,%rdx
+            mov $0,%rax
+            syscall
+            call c
+            """),
+        ),
+        # zeroize the stack and put the data pointer at the base
+        ("header", textwrap.dedent(f"""\
+            .text
+            .globl main
+            main:
+            mov ${tape_size // 8 + 1},%rcx
+            e:
+            movq $0,(%rsp)
+            sub $8,%rsp
+            dec %rcx
+            jne e
+            mov %rsp,{dp}
+            """ ),
+        ),
+        # exit, stores fn to check sys_read result
+        ("footer", textwrap.dedent(f"""\
+            mov $60,%rax
+            mov $0,%rdi
+            syscall
+            c:
+            test %rax,%rax
+            jne r
+            mov{add_postfix} $0,({dp})
+            r:
+            ret
+            """),
+        ),
+    ])
+
 
 
 
@@ -56,85 +113,15 @@ class CompileCtx:
         self.tape_size = tape_size
 
         self.cell_bytes = cell_bytes
-        self.addrmode = {1: "byte", 2: "word", 4: "dword", 8: "qword"}[cell_bytes]
+        self.addrmode = {1: "", 2: "w", 4: "l", 8: "q"}[cell_bytes]
 
         self.stack_size = stack_size
 
         self.arch = arch
         self.dp = {"x86": "r12", "arm": "X19"}[arch]
         if arch == "x86":
-            # Ordered in terms of commonness of use. More common operations
-            # are closer to <0> so we have to travel less far to get to them.
-            #
-            # Also avoid indentation and comments because it takes longer to print
-            # in brainfuck
-            snippets = [
-                ("increment_dp", f"add {self.dp}, {self.cell_bytes}\n"),
-                ("decrement_dp", f"sub {self.dp}, {self.cell_bytes}\n"),
-                ("increment_tape", f"add {self.cell_bytes} [{self.dp}], 1\n"),
-                ("decrement_tape", f"sub {self.cell_bytes} [{self.dp}], 1\n"),
-                ("check_loop_start", f"cmp {self.addrmode} [{self.dp}], 0\nje e"),
-                ("check_loop_end", f"cmp {self.addrmode} [{self.dp}], 0\njne s"),
-                (
-                    "output",
-                    textwrap.dedent(f"""\
-                    mov rdi, 1
-                    lea rsi, [{self.dp}]
-                    mov rdx, 1
-                    mov rax, 1
-                    syscall
-                    """),
-                ),
-                (
-                    "input",
-                    textwrap.dedent(
-                        f"""\
-                    mov rdi, 0
-                    lea rsi, [{self.dp}]
-                    mov rdx, 1
-                    mov rax, 0
-                    syscall
-                    call c
-                    """
-                    ),
-                ),
-                (
-                    "header",
-                    textwrap.dedent(  # zeroize the stack and put the data pointer at the base
-                        f"""\
-                    global main
-                    section .text
-                    main:
-                    mov rcx, {self.tape_size // 8 + 1}
-                    e:
-                    mov qword [rsp], 0
-                    sub rsp, 0b1000
-                    dec rcx
-                    jne e
-                    mov {self.dp}, rsp
-                    """
-                    ),
-                ),
-                (
-                    "footer",
-                    textwrap.dedent(  # exit, stores fn to check sys_read result
-                        f"""\
-                    mov rax, 60
-                    mov rdi, 0
-                    syscall
-                    c:
-                    test rax, rax
-                    jne r
-                    mov {self.addrmode} [{self.dp}], 0
-                    r:
-                    ret
-                    """
-                    ),
-                ),
-            ]
-            self.snippets = dict(snippets)
-            chars = "dsycalmovjnext[ri], 1\n0.:6qwb327ugp5"
-            assert len(chars) == len(set("".join(s for s in self.snippets.values())))
+            self.snippets = x86_snippets(tape_size, cell_bytes)
+            chars = set("".join(s for s in self.snippets.values()))
             self.alphabet = dict(zip(chars, range(len(chars))))
         elif arch == "arm":
             raise NotImplementedError
@@ -230,7 +217,7 @@ class CompileCtx:
             OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
             OUT_S(":\n"),  # emit end of label
             SHF(-2),  # move into <0>
-            *self.emit_snippet("check_loop_start"),
+            *self.emit_snippet("check_loop_end"),
             SHF(2),  # move back into t1
             OUT_N("a", *off(TMP1, ST, TMP1, TMP2, TMP3)),
             OUT_S("\n"),  # move to next line
