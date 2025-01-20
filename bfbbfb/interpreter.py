@@ -47,7 +47,7 @@ class BFInterpreter(Interpreter):
         cell_size=1,
         debug=False,
         real_stdin=False,
-        use_clib=True
+        use_clib=False
     ):
         super().__init__(set_tape, set_input, tape_size, cell_size, debug)
         self.real_stdin = real_stdin
