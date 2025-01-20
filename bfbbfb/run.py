@@ -34,8 +34,12 @@ def run():
     run_parser.add_argument(
         "--raw", action="store_true", help="treat the program as a raw brainfuck string"
     )
-    run_parser.add_argument("--width", choices=[1, 2, 4, 8], default=1, help="set width of cell in bytes")
-    run_parser.add_argument("--length", type=int, default=30000, help="set tape length")
+    run_parser.add_argument(
+        "--width", choices=[1, 2, 4, 8], default=1, help="set width of cell in bytes"
+    )
+    run_parser.add_argument(
+        "--length", type=int, default=30000, help="set tape length"
+    )
     run_parser.add_argument(
         "--print-tape",
         type=int,
@@ -43,7 +47,9 @@ def run():
         help="how many cells of the tape to print when execution is finished",
         metavar="CELLS",
     )
-    run_parser.add_argument("--use-py", action="store_true", help="use a python interpreter instead of the c++ one")
+    run_parser.add_argument(
+        "--use-py", action="store_true", help="use a python interpreter instead of the c++ one"
+    )
     run_parser.add_argument("program", type=str, help="the program to run")
 
     dsl_parser.add_argument(
@@ -96,8 +102,34 @@ def run():
             if namespace.show_args:
                 import inspect
 
-                print(inspect.getfullargspec(mod.compile))
-                exit(1)
+                spec = inspect.getfullargspec(mod.compile)
+                args = zip(spec.args, [None]*(len(spec.args)-len(spec.defaults))+[*spec.defaults])
+
+                out = []
+                
+                for arg, default in args:
+                    res = arg
+                    if default is not None:
+                        res += f"={repr(default)}"
+
+                    out.append(res)
+
+                if spec.varargs is not None:
+                    out.append(f"*{spec.varargs}")
+
+                for arg in spec.kwonlyargs:
+                    res = arg
+                    if arg in spec.kwonlydefaults:
+                        res += f"={repr(spec.kwonlydefaults[arg])}"
+
+                    out.append(res)
+
+                if spec.varkw is not None:
+                    out.append(f"**{spec.varkw}")
+                
+                print(f"Function signature for compile in {namespace.file}")
+                print(", ".join(out))
+                exit(0)
 
             kwargs = {}
             args = []
@@ -113,8 +145,7 @@ def run():
             if namespace.output:
                 print(output)
             else:
-                with open(
-                    next(re.finditer(r"(\w+)\.py$", namespace.file)).group(1) + ".bf",
-                    "w",
-                ) as f:
+                fname = next(re.finditer(r"(\w+)\.py$", namespace.file)).group(1) + ".bf"
+                with open(fname, "w") as f:
                     f.write(output)
+                print(f"Successfully compiled {namespace.file} to {fname}")
