@@ -1,6 +1,7 @@
 import textwrap
 
-from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT, OUT_N, OUT_S, SHF, ZERO, off
+from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT, OUT_N, OUT_S, SHF, ZERO
+from bfbbfb.stdlib import off
 
 # !! STACK STRUCTURE !!
 #

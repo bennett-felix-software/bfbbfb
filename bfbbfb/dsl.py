@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from bfbbfb.interpreter import Interpreter
 
-
 class Instruction(ABC):
     """
     Instructions are a single operation which could represent either one or
@@ -59,6 +58,8 @@ class SHF(Instruction):
 
     def exec(self, interp: Interpreter):
         interp.dp += self.off
+        if interp.dp > len(interp.tape) or interp.dp < 0:
+            raise IndexError(f"{interp.dp} is not in (0, {len(interp.tape)})")
 
 
 @dataclass
@@ -162,8 +163,11 @@ class IN(Instruction):
         return ","
 
     def exec(self, interp: Interpreter):
-        interp.tape[interp.dp] = ord(interp.input[interp.itp])
-        interp.itp += 1
+        if interp.itp < len(interp.input):
+            interp.tape[interp.dp] = ord(interp.input[interp.itp])
+            interp.itp += 1
+        else:
+            interp.tape[interp.dp] = 0
 
 @dataclass
 class OUT(Instruction):
@@ -204,14 +208,14 @@ class OUT_N(Instruction):
             COPY(self.n, self.tmp1, self.tmp2),
             SHF(self.tmp1),
             ADD(ord(self.src)),
-            SHF(*off(self.tmp1, self.tmp2)),
+            SHF(self.tmp2 - self.tmp1),
             LOOP(
                 ADD(-1),
-                SHF(*off(self.tmp2, self.tmp1)),
+                SHF(self.tmp1 - self.tmp2),
                 OUT(),
-                SHF(*off(self.tmp1, self.tmp2)),
+                SHF(self.tmp2 - self.tmp1),
             ),
-            SHF(*off(self.tmp2, self.tmp1)),
+            SHF(self.tmp1 - self.tmp2),
             ADD(-ord(self.src)),
             SHF(-self.tmp1)
         )))
@@ -245,11 +249,3 @@ class OUT_S(Instruction):
         print(self.s, end="")
 
 
-def off(reference, *args):
-    """
-    offset function that came to me in a dream. Makes global offsets relative. If
-    you know you're currently at TMP1 and want to go to TMP2, you don't need to do
-    SHF(1) and include a magic number. You can instead do SHF(*off(TMP1, TMP2)) and
-    it will offset you enough to get to TMP2 given that you are currently in TMP1.
-    """
-    return [arg - reference for arg in args]

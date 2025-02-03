@@ -22,16 +22,17 @@ class Interpreter:
         self,
         set_tape=None,
         set_input="",
-        tape_size=30000,
+        tape_size=None,
         cell_size=1,
         debug=False,
     ):
         if not set_tape:
-            self.tape = [0 for _ in range(tape_size)]
-            self.tape_size = tape_size
+            self.tape_size = tape_size or 30000
+            self.tape = [0 for _ in range(self.tape_size)]
         else:
-            self.tape = set_tape
-            self.tape_size = len(set_tape)
+            self.tape_size = tape_size or len(set_tape)
+            self.tape = [0 for _ in range(self.tape_size)]
+            self.tape[:len(set_tape)] = set_tape
 
         self.debug = debug
         self.cell_size = cell_size
@@ -103,7 +104,7 @@ class BFInterpreter(Interpreter):
         self,
         set_tape=None,
         set_input="",
-        tape_size=30000,
+        tape_size=None,
         cell_size=1,
         debug=False,
         real_stdin=False,
