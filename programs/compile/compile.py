@@ -209,6 +209,7 @@ def c_simple_snippets(tape_size, cell_bytes):
 def c_obfuscated_snippets(tape_size, cell_bytes):
     # using exact int types requires another header
     int_type = {1: "char", 2: "short", 4: "int", 8: "long"}[cell_bytes]
+    # TODO: change macro nmes to DNA codons
     return {
         "increment_dp": "XXX ",
         "decrement_dp": "XXY ",
@@ -222,15 +223,15 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             #include <unistd.h>
             #define \\
             XXX      \\
-            p=(p      \\
-            *1+1/      \\
-            p+1+1*      \\
-            p*p)/(1      \\
+            (p*1      \\
+            +1/p+      \\
+            1+1*p*      \\
+            p++)/(1      \\
             *p+1/p);      ;
             #define       \\
             XXY          \\
-            p=(p-p*1    \\
-            -1/p+p*    \\
+            (p-p*1-1    \\
+            /p--+p*    \\
             p*1)*p    \\
             /(1+p    \\
             *p);    ;
