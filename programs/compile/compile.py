@@ -226,7 +226,7 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             *p*p++??!1%p \\
             )/(1*p+1/+p) ;
             # define XXY \\
-            (p-p*1-1*-0/ \\
+            (p-p*p-1*-p/ \\
             p--+p*p*1)*+ \\
             +p/(~!+p*+p) ;
             # define XYX \\
@@ -245,8 +245,14 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             (p*p-1)/(1-p \\
             )-+1+t)??(-~ \\
             (+p^??-p)??) ;
-            #define YXX while(t[p]){{
-            #define YXY }}
+            # define YXX \\
+            p??!p*(p*p+p \\
+            +1)/(p*p+1); \\
+            for(;(-(p*p- \\
+            1)/(1-p)-1+t \\
+            )[-~(p??'??- \\
+            (p))??);)??< ;
+            # define YXY }}
             #define YYX write(1, &t[p], {cell_bytes});
             #define YYY if (read(0, &t[p], {cell_bytes}) <= 0) {{ write(1, \"_\", 1); _
             #define _ return 0; }}
