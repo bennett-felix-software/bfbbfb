@@ -220,8 +220,8 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
         "input": "YYY ",
         "header": textwrap.dedent(f"""\
             #include <unistd.h>
-            #define XXX p++;
-            #define XXY p--;
+            #define XXX p=(p*p*p+p*p+p+p/p)/(p*p+p/p);
+            #define XXY p=(p*p*p-p*p+p-p/p)/(p*p+p/p);
             #define XYX t[p]++;
             #define XYY t[p]--;
             #define YXX while(t[p]){{
@@ -230,8 +230,8 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             #define YYY if (read(0, &t[p], {cell_bytes}) <= 0) {{ write(1, \"_\", 1); return 0; }}
             #define _ return 0; }}
             int main() {{
-                int p = 0;
-                {int_type} t[30000] = {{0}};
+                int p = 1;
+                {int_type} t[30001] = {{0}};
             """),
         "footer": "_",
     }
