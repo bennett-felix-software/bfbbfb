@@ -68,8 +68,7 @@ static PyObject* execute(PyObject *self, PyObject *args)
       case ']':
         if (tape[dp]) ip=jump_table[ip];
         break;
-      default:
-        Py_RETURN_NONE;
+      default: ; // ignore other characters
     }
     ip++;
   }
