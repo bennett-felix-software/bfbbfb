@@ -221,41 +221,38 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
         "input": "YYY ",
         "header": textwrap.dedent(f"""\
             #include <unistd.h>
-            #define \\
-            XXX      \\
-            (p*1      \\
-            +1/p+      \\
-            1+1*p*      \\
-            p++)/(1      \\
-            *p+1/p);      ;
-            # define XXY \
-            (p-p*1-1*-0/ \
-            p--+p*p*1)*+ \
+            # define XXX \\
+            (p*1+1/p+1+1 \\
+            *p*p++??!1%p \\
+            )/(1*p+1/+p) ;
+            # define XXY \\
+            (p-p*1-1*-0/ \\
+            p--+p*p*1)*+ \\
             +p/(~!+p*+p) ;
-            # define XYX \
-            (-(p*p-1)/(1 \
-            -p)-1+t)??(- \
-            ??-(p??'??-p \
-            )??)=+-(??-p \
-            ^p)+-??-p?(p \
-            +t)??((+p??! \
-            p)-p??)+1:p* \
+            # define XYX \\
+            (-(p*p-1)/(1 \\
+            -p)-1+t)??(- \\
+            ??-(p??'??-p \\
+            )??)=+-(??-p \\
+            ^p)+-??-p?(p \\
+            +t)??((+p??! \\
+            p)-p??)+1:p* \\
             +p/(+p??!+p) ;
-            # define XYY \
-            ((+p??!p)-p) \
-            ??(+p+t??)=( \
-            ??-p??'p)+(- \
-            (p*p-1)/(1-p \
-            )-+1+t)??(-~ \
+            # define XYY \\
+            ((+p??!p)-p) \\
+            ??(+p+t??)=( \\
+            ??-p??'p)+(- \\
+            (p*p-1)/(1-p \\
+            )-+1+t)??(-~ \\
             (+p^??-p)??) ;
             #define YXX while(t[p]){{
             #define YXY }}
             #define YYX write(1, &t[p], {cell_bytes});
-            #define YYY if (read(0, &t[p], {cell_bytes}) <= 0) {{ write(1, \"_\", 1); return 0; }}
+            #define YYY if (read(0, &t[p], {cell_bytes}) <= 0) {{ write(1, \"_\", 1); _
             #define _ return 0; }}
             int main() {{
-                int p = 1;
-                {int_type} t[30001] = {{0}};
+                int p = 2;
+                {int_type} t[30002] = {{0}};
             """),
         "footer": "_",
     }
