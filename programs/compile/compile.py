@@ -1,3 +1,4 @@
+import platform
 import textwrap
 
 from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT, OUT_N, OUT_S, SHF, ZERO
@@ -28,12 +29,13 @@ TMP2 = 3
 TMP3 = 4
 M0 = 5
 
+
 def optimize_alphabet_layout(ss: list[str]) -> str:
     chars = list(set("".join(ss)))
     edges = defaultdict(lambda: 0)
     for s in ss:
         for i in range(len(s) - 1):
-            edges[tuple(sorted((s[i], s[i+1])))] += 1
+            edges[tuple(sorted((s[i], s[i + 1])))] += 1
             # edges[(s[i+1], s[i])] += 1
 
     layout = []
@@ -48,6 +50,7 @@ def optimize_alphabet_layout(ss: list[str]) -> str:
         degree[v] += 1
 
     print(layout)
+
 
 def arm_snippets(tape_size, cell_bytes):
     postfix = {1: "b", 2: "h", 4: ""}[cell_bytes]
@@ -113,39 +116,47 @@ def arm_snippets(tape_size, cell_bytes):
             str{postfix} #0,[{dp},#0]
             r:
             br lr
-            """)
+            """),
     }
+
 
 def x86_snippets(tape_size, cell_bytes):
     postfix = {1: "b", 2: "w", 4: "l", 8: "q"}[cell_bytes]
     dp = "%r12"
+    macos = platform.system() == "Darwin"
+    syscall_numbers = (
+        {"write": 0x2000004, "read": 0x2000003, "exit": 0x2000001}
+        if macos
+        else {"write": 1, "read": 0, "exit": 60}
+    )
+    entry_point = "_main" if macos else "main"
     return {
         "increment_dp": f"add $1,{dp}\n",
         "decrement_dp": f"sub $1,{dp}\n",
         "increment_tape": f"add{postfix} $1,({dp})\n",
         "decrement_tape": f"sub{postfix} $1,({dp})\n",
         "check_loop_start": f"cmp{postfix} $0,({dp})\nje e",
-        "check_loop_end":   f"cmp{postfix} $0,({dp})\njne s",
+        "check_loop_end": f"cmp{postfix} $0,({dp})\njne s",
         "output": textwrap.dedent(f"""\
             mov $1,%rdi
             lea ({dp}),%rsi
             mov $1,%rdx
-            mov $1,%rax
+            mov ${syscall_numbers["write"]},%rax
             syscall
             """),
         "input": textwrap.dedent(f"""\
             mov $0,%rdi
             lea ({dp}),%rsi
             mov $1,%rdx
-            mov $0,%rax
+            mov ${syscall_numbers["read"]},%rax
             syscall
             call c
             """),
         # zeroize the stack and put the data pointer at the base
         "header": textwrap.dedent(f"""\
             .text
-            .globl main
-            main:
+            .globl {entry_point}
+            {entry_point}:
             mov ${tape_size // 8 + 1},%rcx
             e:
             movq $0,(%rsp)
@@ -153,10 +164,10 @@ def x86_snippets(tape_size, cell_bytes):
             dec %rcx
             jne e
             mov %rsp,{dp}
-            """ ),
+            """),
         # exit, stores fn to check sys_read result
         "footer": textwrap.dedent(f"""\
-            mov $60,%rax
+            mov ${syscall_numbers["exit"]},%rax
             mov $0,%rdi
             syscall
             c:
@@ -165,7 +176,7 @@ def x86_snippets(tape_size, cell_bytes):
             mov{postfix} $0,({dp})
             r:
             ret
-            """)
+            """),
     }
 
 
@@ -179,9 +190,9 @@ class CompileCtx:
 
         get_snippets = {
             "x86": lambda: x86_snippets(tape_size, cell_bytes),
-            "arm": lambda: arm_snippets(tape_size, cell_bytes)
+            "arm": lambda: arm_snippets(tape_size, cell_bytes),
         }[arch]
-        
+
         self.snippets = get_snippets()
         chars = set("".join(s for s in self.snippets.values()))
         self.alphabet = dict(zip(chars, range(len(chars))))
