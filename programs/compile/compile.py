@@ -2,7 +2,7 @@ import platform
 import textwrap
 
 from bfbbfb.dsl import ADD, COPY, IN, LOOP, MOV, OUT, OUT_N, OUT_S, SHF, ZERO
-from bfbbfb.stdlib import off
+from bfbbfb.stdlib import include_if, off
 
 # !! STACK STRUCTURE !!
 #
@@ -14,9 +14,9 @@ from bfbbfb.stdlib import off
 # first stack value. x is on the top of the stack, z is on the bottom.
 
 # !! REGISTER STRUCTURE !!
-# +-------+------------+--------------+-----+-------+----+----+----+--------+
-# | stack | stack temp | paren number | <0> | input | t1 | t2 | t3 | mem... |
-# +-------+------------+--------------+-----+-------+----+----+----+--------+
+# +-------+------------+--------------+-----+-------+----+----+----+------------+
+# | stack | stack temp | paren number | <0> | input | t1 | t2 | t3 | t4 | mem.. |
+# +-------+------------+--------------+-----+-------+----+----+----+------------+
 # <0> should always be set to 0 (or at least very transiently not)
 
 
@@ -27,7 +27,8 @@ PI = 1
 TMP1 = 2
 TMP2 = 3
 TMP3 = 4
-M0 = 5
+TMP4 = 5  # used by c_obfuscated to keep track of the current instruction count % 40
+M0 = 6
 
 
 def optimize_alphabet_layout(ss: list[str]) -> str:
@@ -190,8 +191,7 @@ def c_simple_snippets(tape_size, cell_bytes):
         "check_loop_start": "if (!tape[dp]) goto e",
         "check_loop_end": "if (tape[dp]) goto s",
         "output": f"write(1, &tape[dp], {cell_bytes});",
-        "input": f"if (read(0, &tape[dp], {cell_bytes}) <= 0) {{ free(tape); write(1, \"return 0;}}\", 10); return 0; }}",
-        # zeroize the stack and put the data pointer at the base
+        "input": f'if (read(0, &tape[dp], {cell_bytes}) <= 0) {{ free(tape); write(1, "return 0;}}", 10); return 0; }}',
         "header": textwrap.dedent(f"""\
             #include <stdint.h>
             #include <stdlib.h>
@@ -202,8 +202,38 @@ def c_simple_snippets(tape_size, cell_bytes):
                 if (NULL == tape) {{ exit(69); }}
             
             """),
-        # exit, stores fn to check sys_read result
-        "footer": "return 0;}"
+        "footer": "return 0;}",
+    }
+
+
+def c_obfuscated_snippets(tape_size, cell_bytes):
+    # using exact int types requires another header
+    int_type = {1: "char", 2: "short", 4: "int", 8: "long"}[cell_bytes]
+    return {
+        "increment_dp": "A ",
+        "decrement_dp": "B ",
+        "increment_tape": "C ",
+        "decrement_tape": "D ",
+        "check_loop_start": "E ",
+        "check_loop_end": "F ",
+        "output": "G ",
+        "input": "H ",
+        "header": textwrap.dedent(f"""\
+            #include <unistd.h>
+            #define A p++;
+            #define B p--;
+            #define C t[p]++;
+            #define D t[p]--;
+            #define E while(t[p]){{
+            #define F }}
+            #define G write(1, &t[p], {cell_bytes});
+            #define H if (read(0, &t[p], {cell_bytes}) <= 0) {{ write(1, \"I\", 1); return 0; }}
+            #define I return 0; }}
+            int main() {{
+                int p = 0;
+                {int_type} t[30000] = {{0}};
+            """),
+        "footer": "I",
     }
 
 
@@ -219,6 +249,7 @@ class CompileCtx:
             "x86": lambda: x86_snippets(tape_size, cell_bytes),
             "arm": lambda: arm_snippets(tape_size, cell_bytes),
             "c_simple": lambda: c_simple_snippets(tape_size, cell_bytes),
+            "c_obfuscated": lambda: c_obfuscated_snippets(tape_size, cell_bytes),
         }[arch]
 
         self.snippets = get_snippets()
@@ -281,27 +312,30 @@ class CompileCtx:
         USES      tmp1, tmp2, tmp3
         ENDS AT   <0>
         """
-        return [
-            SHF(*off(G0, GPI)),  # go to global parenthesis index
-            # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
-            ADD(1),
-            COPY(*off(GPI, GPI, TMP1, ST)),
-            SHF(
-                *off(GPI, ST)
-            ),  # move to stack temp, as per add_to_stack calling convention
-            *add_to_stack(),  # add it to the stack
-            SHF(*off(ST, TMP1)),  # move into TMP1
-            OUT_S("s"),
-            OUT_N("a", *off(TMP1, GPI, TMP1, TMP2)),
-            OUT_S(":\n"),  # emit end of label
-            SHF(-2),  # move into <0>
-            *self.emit_snippet("check_loop_start"),
-            SHF(2),  # move back into t1
-            OUT_N("a", *off(TMP1, GPI, TMP1, TMP2)),
-            *([OUT_S(";")] if self.arch.startswith("c_") else []),
-            OUT_S("\n"),  # move to next line
-            SHF(*off(TMP1, G0)),  # end back at index 0
-        ]
+        if self.arch == "c_obfuscated":
+            return self.emit_snippet("check_loop_start")
+        else:
+            return [
+                SHF(*off(G0, GPI)),  # go to global parenthesis index
+                # bump it (this allows it to start at 0, since 0 isn't allowed on the stack)
+                ADD(1),
+                COPY(*off(GPI, GPI, TMP1, ST)),
+                SHF(
+                    *off(GPI, ST)
+                ),  # move to stack temp, as per add_to_stack calling convention
+                *add_to_stack(),  # add it to the stack
+                SHF(*off(ST, TMP1)),  # move into TMP1
+                OUT_S("s"),
+                OUT_N("a", *off(TMP1, GPI, TMP1, TMP2)),
+                OUT_S(":\n"),  # emit end of label
+                SHF(-2),  # move into <0>
+                *self.emit_snippet("check_loop_start"),
+                SHF(2),  # move back into t1
+                OUT_N("a", *off(TMP1, GPI, TMP1, TMP2)),
+                *([OUT_S(";")] if self.arch.startswith("c_") else []),
+                OUT_S("\n"),  # move to next line
+                SHF(*off(TMP1, G0)),  # end back at index 0
+            ]
 
     def end_loop(self):
         """
@@ -309,23 +343,26 @@ class CompileCtx:
         USES      tmp1, tmp2
         ENDS AT   <0>
         """
-        return [
-            SHF(*off(G0, ST)),  # go to stack temp
-            *pop_from_stack(),  # pop from the stack
-            SHF(*off(ST, TMP1)),
-            OUT_S("e"),
-            OUT_N("a", *off(TMP1, ST, TMP1, TMP2)),
-            OUT_S(":\n"),  # emit end of label
-            SHF(-2),  # move into <0>
-            *self.emit_snippet("check_loop_end"),
-            SHF(2),  # move back into t1
-            OUT_N("a", *off(TMP1, ST, TMP1, TMP2)),
-            *([OUT_S(";")] if self.arch.startswith("c_") else []),
-            OUT_S("\n"),  # move to next line
-            SHF(*off(TMP1, ST)),
-            ZERO(),
-            SHF(*off(ST, G0)),
-        ]
+        if self.arch == "c_obfuscated":
+            return self.emit_snippet("check_loop_end")
+        else:
+            return [
+                SHF(*off(G0, ST)),  # go to stack temp
+                *pop_from_stack(),  # pop from the stack
+                SHF(*off(ST, TMP1)),
+                OUT_S("e"),
+                OUT_N("a", *off(TMP1, ST, TMP1, TMP2)),
+                OUT_S(":\n"),  # emit end of label
+                SHF(-2),  # move into <0>
+                *self.emit_snippet("check_loop_end"),
+                SHF(2),  # move back into t1
+                OUT_N("a", *off(TMP1, ST, TMP1, TMP2)),
+                *([OUT_S(";")] if self.arch.startswith("c_") else []),
+                OUT_S("\n"),  # move to next line
+                SHF(*off(TMP1, ST)),
+                ZERO(),
+                SHF(*off(ST, G0)),
+            ]
 
     def emit_increment_dp(self):
         return self.emit_snippet("increment_dp")
@@ -410,6 +447,7 @@ def if_eq_then(comp, *instr):
     """
     STARTS AT  program input
     USES       tmp1 (2), tmp2 (3)
+    ENDS AT    program input
     *instr must start at <0> and end at <0>
     """
     return [
@@ -467,6 +505,23 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
             *if_eq_then(",", *cc.emit_input()),
             *if_eq_then("[", *cc.begin_loop()),
             *if_eq_then("]", *cc.end_loop()),
+            # Increment TMP4 and reset it and print a newline if it's is equal to 40.
+            *include_if(
+                arch == "c_obfuscated",
+                ZERO(),
+                SHF(*off(PI, TMP4)),
+                ADD(1),
+                COPY(*off(TMP4, TMP4, TMP1, PI)),
+                SHF(*off(TMP4, PI)),
+                *if_eq_then(
+                    chr(40),
+                    SHF(*off(G0, TMP3)),
+                    OUT_S("\n"),
+                    SHF(*off(TMP3, TMP4)),
+                    ADD(-40),
+                    SHF(*off(TMP4, G0)),
+                ),
+            ),
             IN(),
         ),
         SHF(*off(PI, G0)),
