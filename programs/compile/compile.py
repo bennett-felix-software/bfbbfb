@@ -228,13 +228,10 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             1+1*p*      \\
             p++)/(1      \\
             *p+1/p);      ;
-            #define       \\
-            XXY          \\
-            (p-p*1-1    \\
-            /p--+p*    \\
-            p*1)*p    \\
-            /(1+p    \\
-            *p);    ;
+            # define XXY \
+            (p-p*1-1*-0/ \
+            p--+p*p*1)*+ \
+            +p/(~!+p*+p) ;
             # define XYX \
             (-(p*p-1)/(1 \
             -p)-1+t)??(- \
