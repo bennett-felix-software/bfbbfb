@@ -1,5 +1,8 @@
 from bfbbfb.dsl import LOOP, SHF, ADD, ZERO, COPY, MOV
 
+def include_if(cond, *args):
+    return args if cond else []
+
 def off(reference, *args):
     """
     offset function that came to me in a dream. Makes global offsets relative. If
