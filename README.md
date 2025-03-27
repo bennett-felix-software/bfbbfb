@@ -1,9 +1,9 @@
-bfbbfb: Bennett & Felix's Best Brainfuck from Brainfuck (compiler)
+bfbbfb: Bennett and Felix Bootstrap Brainfuck from Brainfuck
 ---
 
-Pronounced bfbbfb. The compiler is silent.
+We wrote a brainfuck compiler in brainfuck (sorta).
 
-to run:
+To run:
 ```
 git clone https://github.com/fprasx/bbffbf
 pip install -e bbffbf
