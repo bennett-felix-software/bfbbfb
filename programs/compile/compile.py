@@ -180,6 +180,33 @@ def x86_snippets(tape_size, cell_bytes):
     }
 
 
+def c_simple_snippets(tape_size, cell_bytes):
+    int_type = {1: "uint8_t", 2: "uint16_t", 4: "uint32_t", 8: "uint64_t"}[cell_bytes]
+    return {
+        "increment_dp": "dp++;",
+        "decrement_dp": "dp--;",
+        "increment_tape": "tape[dp]++;",
+        "decrement_tape": "tape[dp]--;",
+        "check_loop_start": "if (!tape[dp]) goto e",
+        "check_loop_end": "if (tape[dp]) goto s",
+        "output": f"write(1, &tape[dp], {cell_bytes});",
+        "input": f"if (read(0, &tape[dp], {cell_bytes}) <= 0) {{ free(tape); write(1, \"return 0;}}\", 10); return 0; }}",
+        # zeroize the stack and put the data pointer at the base
+        "header": textwrap.dedent(f"""\
+            #include <stdint.h>
+            #include <stdlib.h>
+            #include <unistd.h>
+            int main(int argc, char **argv) {{
+                int dp = 0;
+                {int_type} *tape = calloc({tape_size}, sizeof({int_type}));
+                if (NULL == tape) {{ exit(69); }}
+            
+            """),
+        # exit, stores fn to check sys_read result
+        "footer": "return 0;}"
+    }
+
+
 class CompileCtx:
     def __init__(self, arch, tape_size, cell_bytes, stack_size):
         self.tape_size = tape_size
@@ -191,6 +218,7 @@ class CompileCtx:
         get_snippets = {
             "x86": lambda: x86_snippets(tape_size, cell_bytes),
             "arm": lambda: arm_snippets(tape_size, cell_bytes),
+            "c_simple": lambda: c_simple_snippets(tape_size, cell_bytes),
         }[arch]
 
         self.snippets = get_snippets()
@@ -270,6 +298,7 @@ class CompileCtx:
             *self.emit_snippet("check_loop_start"),
             SHF(2),  # move back into t1
             OUT_N("a", *off(TMP1, GPI, TMP1, TMP2)),
+            *([OUT_S(";")] if self.arch.startswith("c_") else []),
             OUT_S("\n"),  # move to next line
             SHF(*off(TMP1, G0)),  # end back at index 0
         ]
@@ -291,6 +320,7 @@ class CompileCtx:
             *self.emit_snippet("check_loop_end"),
             SHF(2),  # move back into t1
             OUT_N("a", *off(TMP1, ST, TMP1, TMP2)),
+            *([OUT_S(";")] if self.arch.startswith("c_") else []),
             OUT_S("\n"),  # move to next line
             SHF(*off(TMP1, ST)),
             ZERO(),
