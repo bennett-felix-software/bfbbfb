@@ -97,11 +97,11 @@ def arm_snippets(tape_size, cell_bytes):
             .global _start
             _start:
             mov x0,${tape_size // 4 + 1}
-            e:
+            f:
             mov sp,#0
             sub sp,sp,#8
             sub x0,x0,#1
-            bnz e
+            bnz f
             mov {dp},sp
             """),
         # exit, stores fn to check sys_read result
@@ -158,11 +158,11 @@ def x86_snippets(tape_size, cell_bytes):
             .globl {entry_point}
             {entry_point}:
             mov ${tape_size // 8 + 1},%rcx
-            e:
+            f:
             movq $0,(%rsp)
             sub $8,%rsp
             dec %rcx
-            jne e
+            jne f
             mov %rsp,{dp}
             """),
         # exit, stores fn to check sys_read result
