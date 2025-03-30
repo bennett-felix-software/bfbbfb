@@ -264,9 +264,18 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             #define YYY if (read(0, t+p, 1) <= 0) { write(1, \"_\", 1); _
             # define  _  \\
             return 0;??> ;
-            int main() {
-                int p = 2;
-                char t[30002] = {0};
+            int main(void)
+            {char t[(1+1)*
+            (+1+(+1+1)*((1
+            +1)*((+1+1)*(1
+            +(+1+1)*(1+(+1
+            +1)*((1+1)*((+
+            1+1)*(1+(+1+1)
+            *((+1+1)*(1+(1
+            +1)*((1+1)*(+1
+            +(1+1)*(1+(1+1
+            ))))))))))))))
+            ]={0};int p=2;
             """),
         "footer": "_",
     }
