@@ -207,7 +207,7 @@ def c_simple_snippets(tape_size, cell_bytes):
 
 
 def c_obfuscated_snippets(tape_size, cell_bytes):
-    assert cell_bytes == 1 < "the c_obfuscated backend only supports cell_bytes == 1"
+    assert cell_bytes == 1, "the c_obfuscated backend only supports cell_bytes == 1"
     # using exact int types requires another header
     int_type = {1: "char", 2: "short", 4: "int", 8: "long"}[cell_bytes]
     # TODO: change macro nmes to DNA codons
@@ -253,13 +253,14 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             1)/(1-p)-1+t \\
             )[-~(p??'??- \\
             (p))??);)??< ;
-            # define YXY }}
+            # define YXY \\
+            p+-p*p/9;??> ;
             #define YYX write(1, &t[p], 1);
-            #define YYY if (read(0, &t[p], 1) <= 0) {{ write(1, \"_\", 1); _
-            #define _ return 0; }}
-            int main() {{
+            #define YYY if (read(0, &t[p], 1) <= 0) { write(1, \"_\", 1); _
+            #define _ return 0; }
+            int main() {
                 int p = 2;
-                char t[30002] = {{0}};
+                char t[30002] = {0};
             """),
         "footer": "_",
     }
