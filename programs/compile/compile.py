@@ -255,7 +255,12 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             (p))??);)??< ;
             # define YXY \\
             p+-p*p/9;??> ;
-            #define YYX write(1, t+p, 1);
+            # define YYX \\
+            +p*+p&p-+p*1 \\
+            ;write(p*p-( \\
+            p+1)*(p-1),( \\
+            p*p-p)/(p-1) \\
+            +t,+-~(p^p)) ;
             #define YYY if (read(0, t+p, 1) <= 0) { write(1, \"_\", 1); _
             #define _ return 0; }
             int main() {
