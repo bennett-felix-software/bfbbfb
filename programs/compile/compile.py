@@ -261,7 +261,18 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             p+1)*(p-1),( \\
             p*p-p)/(p-1) \\
             +t,+-~(p^p)) ;
-            #define YYY if (read(0, t+p, 1) <= 0) { write(1, \"_\", 1); _
+            # define YYY \\
+            if(read(p%1* \\
+            (p*p-1)/(p+1 \\
+            ), -(p*p-1)/ \\
+            (1-p)-1+t,(p \\
+            *p+p+1+p*p*p \\
+            )/(1+p*p)-p) \\
+            <=(p&~p))??< \\
+            +p*+p&p-+p*1 \\
+            ;write(p*p-( \\
+            p+1)*(+p-1), \\
+            "_",-~p-p);_ ;
             # define  _  \\
             return 0;??> ;
             int main(void)
