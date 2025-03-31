@@ -27,7 +27,7 @@ PI = 1
 TMP1 = 2
 TMP2 = 3
 TMP3 = 4
-TMP4 = 5  # used by c_obfuscated to keep track of the current instruction count % 10
+TMP4 = 5  # used by c_obfuscated to keep track of the current instruction count % 40
 M0 = 6
 
 
@@ -212,14 +212,14 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
     int_type = {1: "char", 2: "short", 4: "int", 8: "long"}[cell_bytes]
     # TODO: change macro nmes to DNA codons
     return {
-        "increment_dp": "XXX ",
-        "decrement_dp": "XXY ",
-        "increment_tape": "XYX ",
-        "decrement_tape": "XYY ",
-        "check_loop_start": "YXX ",
-        "check_loop_end": "YXY ",
-        "output": "YYX ",
-        "input": "YYY ",
+        "increment_dp": "A ",
+        "decrement_dp": "B ",
+        "increment_tape": "C ",
+        "decrement_tape": "D ",
+        "check_loop_start": "E ",
+        "check_loop_end": "F ",
+        "output": "G ",
+        "input": "H ",
         "header": textwrap.dedent("""\
             #include <unistd.h>
             int main(void)
@@ -234,18 +234,18 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             +(1+1)*(1+(1+1
             ))))))))))))))
             ]={0};int p=2;
-            # define XXX \\
+            # define  A  \\
             (p*1+1/p+1+1 \\
             *p*p++??!1%p \\
             )/(1*p+1/+p) ;
-            # define YXX \\
+            # define  E  \\
             p??!p*(p*p+p \\
             +1)/(p*p+1); \\
             for(;(-(p*p- \\
             1)/(1-p)-1+t \\
             )[-~(p??'??- \\
             (p))??);)??< ;
-            # define XYX \\
+            # define  C  \\
             (-(p*p-1)/(1 \\
             -p)-1+t)??(- \\
             ??-(p??'??-p \\
@@ -254,7 +254,7 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             +t)??((+p??! \\
             p)-p??)+1:p* \\
             +p/(+p??!+p) ;
-            # define YYY \\
+            # define  H  \\
             if(read(p%1* \\
             (p*p-1)/(p+1 \\
             ),-(+p*p-1)/ \\
@@ -266,22 +266,22 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             ;write(p*p-( \\
             p+1)*(+p-1), \\
             "_",-~p-p);_ ;
-            # define XYY \\
+            # define  D  \\
             ((+p??!p)-p) \\
             ??(+p+t??)=( \\
             ??-p??'p)+(- \\
             (p*p-1)/(1-p \\
             )-+1+t)??(-~ \\
             (+p^??-p)??) ;
-            # define XXY \\
+            # define  B  \\
             (p-p*p-1*-p/ \\
             p--+p*p*1)*+ \\
             +p/(~!+p*+p) ;
             # define  _  \\
             return 0;??> ;
-            # define YXY \\
+            # define  F  \\
             p+-p*p/9;??> ;
-            # define YYX \\
+            # define  G  \\
             +p*+p&p-+p*1 \\
             ;write(p*p-( \\
             p+1)*(p-1),( \\
@@ -560,7 +560,7 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
             *if_eq_then(",", *cc.emit_input()),
             *if_eq_then("[", *cc.begin_loop()),
             *if_eq_then("]", *cc.end_loop()),
-            # Increment TMP4 and reset it and print a newline if it's is equal to 10.
+            # Increment TMP4 and reset it and print a newline if it's is equal to 40.
             *include_if(
                 arch == "c_obfuscated",
                 ZERO(),
@@ -569,11 +569,11 @@ def compile(arch="x86", tape_size="30000", cell_bytes="1", stack_size="255"):
                 COPY(*off(TMP4, TMP4, TMP1, PI)),
                 SHF(*off(TMP4, PI)),
                 *if_eq_then(
-                    chr(20),
+                    chr(40),
                     SHF(*off(G0, TMP3)),
                     OUT_S("\n"),
                     SHF(*off(TMP3, TMP4)),
-                    ADD(-20),
+                    ADD(-40),
                     SHF(*off(TMP4, G0)),
                 ),
             ),
