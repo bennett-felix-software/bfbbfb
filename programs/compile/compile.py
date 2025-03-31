@@ -222,59 +222,6 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
         "input": "YYY ",
         "header": textwrap.dedent("""\
             #include <unistd.h>
-            # define XXX \\
-            (p*1+1/p+1+1 \\
-            *p*p++??!1%p \\
-            )/(1*p+1/+p) ;
-            # define XXY \\
-            (p-p*p-1*-p/ \\
-            p--+p*p*1)*+ \\
-            +p/(~!+p*+p) ;
-            # define XYX \\
-            (-(p*p-1)/(1 \\
-            -p)-1+t)??(- \\
-            ??-(p??'??-p \\
-            )??)=+-(??-p \\
-            ^p)+-??-p?(p \\
-            +t)??((+p??! \\
-            p)-p??)+1:p* \\
-            +p/(+p??!+p) ;
-            # define XYY \\
-            ((+p??!p)-p) \\
-            ??(+p+t??)=( \\
-            ??-p??'p)+(- \\
-            (p*p-1)/(1-p \\
-            )-+1+t)??(-~ \\
-            (+p^??-p)??) ;
-            # define YXX \\
-            p??!p*(p*p+p \\
-            +1)/(p*p+1); \\
-            for(;(-(p*p- \\
-            1)/(1-p)-1+t \\
-            )[-~(p??'??- \\
-            (p))??);)??< ;
-            # define YXY \\
-            p+-p*p/9;??> ;
-            # define YYX \\
-            +p*+p&p-+p*1 \\
-            ;write(p*p-( \\
-            p+1)*(p-1),( \\
-            p*p-p)/(p-1) \\
-            +t,+-~(p^p)) ;
-            # define YYY \\
-            if(read(p%1* \\
-            (p*p-1)/(p+1 \\
-            ), -(p*p-1)/ \\
-            (1-p)-1+t,(p \\
-            *p+p+1+p*p*p \\
-            )/(1+p*p)-p) \\
-            <=(p&~p))??< \\
-            +p*+p&p-+p*1 \\
-            ;write(p*p-( \\
-            p+1)*(+p-1), \\
-            "_",-~p-p);_ ;
-            # define  _  \\
-            return 0;??> ;
             int main(void)
             {char t[(1+1)*
             (+1+(+1+1)*((1
@@ -287,6 +234,59 @@ def c_obfuscated_snippets(tape_size, cell_bytes):
             +(1+1)*(1+(1+1
             ))))))))))))))
             ]={0};int p=2;
+            # define XXX \\
+            (p*1+1/p+1+1 \\
+            *p*p++??!1%p \\
+            )/(1*p+1/+p) ;
+            # define YXX \\
+            p??!p*(p*p+p \\
+            +1)/(p*p+1); \\
+            for(;(-(p*p- \\
+            1)/(1-p)-1+t \\
+            )[-~(p??'??- \\
+            (p))??);)??< ;
+            # define XYX \\
+            (-(p*p-1)/(1 \\
+            -p)-1+t)??(- \\
+            ??-(p??'??-p \\
+            )??)=+-(??-p \\
+            ^p)+-??-p?(p \\
+            +t)??((+p??! \\
+            p)-p??)+1:p* \\
+            +p/(+p??!+p) ;
+            # define YYY \\
+            if(read(p%1* \\
+            (p*p-1)/(p+1 \\
+            ),-(+p*p-1)/ \\
+            (1-p)-1+t,(p \\
+            *p+p+1+p*p*p \\
+            )/(1+p*p)-p) \\
+            <=(p&~p))??< \\
+            +p*+p&p-+p*1 \\
+            ;write(p*p-( \\
+            p+1)*(+p-1), \\
+            "_",-~p-p);_ ;
+            # define XYY \\
+            ((+p??!p)-p) \\
+            ??(+p+t??)=( \\
+            ??-p??'p)+(- \\
+            (p*p-1)/(1-p \\
+            )-+1+t)??(-~ \\
+            (+p^??-p)??) ;
+            # define XXY \\
+            (p-p*p-1*-p/ \\
+            p--+p*p*1)*+ \\
+            +p/(~!+p*+p) ;
+            # define  _  \\
+            return 0;??> ;
+            # define YXY \\
+            p+-p*p/9;??> ;
+            # define YYX \\
+            +p*+p&p-+p*1 \\
+            ;write(p*p-( \\
+            p+1)*(p-1),( \\
+            p*p-p)/(p-1) \\
+            +t,+-~(p^p)) ;
             """),
         "footer": "_",
     }
