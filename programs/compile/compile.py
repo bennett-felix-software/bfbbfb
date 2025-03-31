@@ -208,9 +208,6 @@ def c_simple_snippets(tape_size, cell_bytes):
 
 def c_obfuscated_snippets(tape_size, cell_bytes):
     assert cell_bytes == 1, "the c_obfuscated backend only supports cell_bytes == 1"
-    # using exact int types requires another header
-    int_type = {1: "char", 2: "short", 4: "int", 8: "long"}[cell_bytes]
-    # TODO: change macro nmes to DNA codons
     return {
         "increment_dp": "A ",
         "decrement_dp": "B ",
