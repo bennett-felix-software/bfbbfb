@@ -12,6 +12,7 @@ class Interpreter:
     tape_size [int]: sets the number of cells
     cell_size [int]: sets the number of bytes per cell
     debug [bool]: whether or not to print debug messages
+    killtime [int|None]: how many steps until we should just die
     
     Properties:
     dp (int): data pointer or cursor. Points to the currently selected cell.
@@ -25,6 +26,7 @@ class Interpreter:
         tape_size=None,
         cell_size=1,
         debug=False,
+        killtime=None
     ):
         if not set_tape:
             self.tape_size = tape_size or 30000
@@ -40,6 +42,8 @@ class Interpreter:
 
         self.dp = 0
         self.itp = 0
+        self.steps = 0
+        self.killtime = killtime
 
     def disp(self, cells=None):
         """
@@ -82,9 +86,12 @@ class DSLInterpreter(Interpreter):
         for inst in program:
             if self.debug:
                 print(repr(inst))
+            self.steps += 1
             inst.exec(self)
             if self.debug:
                 print(self.disp(self.tape_size))
+            if self.killtime is not None and self.steps > self.killtime:
+                raise Exception(f"exceeded maximum steps, died {self.steps} > {self.killtime}")
 
 
 class BFInterpreter(Interpreter):

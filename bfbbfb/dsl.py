@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from bfbbfb.interpreter import Interpreter
 
@@ -70,9 +70,11 @@ class MOV(Instruction):
 
     src (int): source offset
     dest (int): desitnation offset, must be zero
+    sub (bool): should we move but like in a negative manner (default: False)
     """
     src: int
     dest: int
+    sub: bool = field(default=False)
 
     def __str__(self):
         to_src = SHF(self.src)
@@ -80,10 +82,13 @@ class MOV(Instruction):
         from_dest = SHF(self.src - self.dest)
         from_src = SHF(-self.src)
 
-        return f"{to_src}[-{to_dest}+{from_dest}]{from_src}"
+        return f"{to_src}[-{to_dest}{'-' if self.sub else '+'}{from_dest}]{from_src}"
 
     def exec(self, interp: Interpreter):
-        interp.tape[interp.dp + self.dest] += interp.tape[interp.dp + self.src]
+        if self.sub:
+            interp.tape[interp.dp + self.dest] -= interp.tape[interp.dp + self.src]
+        else:
+            interp.tape[interp.dp + self.dest] += interp.tape[interp.dp + self.src]
         interp.tape[interp.dp + self.src] = 0
 
 
@@ -249,3 +254,14 @@ class OUT_S(Instruction):
         print(self.s, end="")
 
 
+@dataclass
+class DEBUG(Instruction):
+    """
+    DEBUG just prints out a little string in the debug statements. NOOP with a name.
+    """
+    s: str
+
+    def __str__(self):
+        return ""
+    def exec(self, interp: Interpreter):
+        return
