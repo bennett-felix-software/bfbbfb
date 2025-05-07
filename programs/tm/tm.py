@@ -529,33 +529,22 @@ def compile(output_tape=True):
 
         # then we have to go to some kinda super loop thing
         ADD(1),
-        DEBUG("setted up"),
         LOOP(
-            DEBUG("looping"),
-            DEBUG("copydown_char start"),
             *copydown_char(),
-            DEBUG("copydown_char end"),
 
             # move stuff into the lower registers ot prepare for copydown
             SHF(-4),
             MOV(4, 0),
             COPY(5, 2, 1),
-            
-            DEBUG("qw_to_transition_function start"),
             *qw_to_transition_function(),
-            DEBUG("qw_to_transition_function end"),
 
             # setup stuff fro get_transition_function_results
             SHF(2),
             ZERO(), # reomve state, we don't care about the old state anymore
             SHF(-2), # back to 0th reg
             
-            DEBUG("get_transition_function_results start"),
             *get_transition_function_result(),
-            DEBUG("get_transition_function_results end"),
-            DEBUG("copyup_transition_function_results start"),
             *copyup_transition_function_results(),
-            DEBUG("copyup_transition_function_results end"),
 
             # updating state is as easy as zeroing old state and moving new one in
             SHF(5),
@@ -564,20 +553,16 @@ def compile(output_tape=True):
 
             # updating the current character isn't particularly difficult either but we have a function for it
             SHF(-5),
-            DEBUG("update_char_at_ptr start"),
             *update_char_at_ptr(),
-            DEBUG("update_char_at_ptr end"),
 
             # finally, we need to determine what to do based on the value of direction
             SHF(-2), # coming from copydown char reg
-            DEBUG("dosomething start"),
             *switch(0, -1, {
                 1: [SHF(3), *moveptr(1), SHF(-3)],
                 2: [SHF(3), *moveptr(-1), SHF(-3)],
                 4: [SHF(2), ZERO(), SHF(1), ADD(1), SHF(-3)],
                 5: [SHF(2), ZERO(), SHF(1), ADD(2), SHF(-3)],
             }),
-            DEBUG("dosomething end"),
 
             # move back to CONTINUE
             SHF(1)
