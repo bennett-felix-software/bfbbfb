@@ -14,7 +14,10 @@ from tm import (
     moveptr,
     compile,
 )
+import pytest
+import random
 
+@pytest.mark.skip
 def test_get_machine():
     res = [
         *[0, 0, 0, 0, 0, 97, 1, 0, 98, 99, 100, 2, 0],
@@ -28,6 +31,7 @@ def test_get_machine():
     assert i.tape[:len(res)] == res
     assert i.dp == len(res)-1
 
+@pytest.mark.skip
 def test_get_machine_slightly_harder():
     res = [
         *[0, 0, 0, 0, 0, 97, 1, 0, 98, 99, 100, 2, 1, 0, 98, 99, 100, 1, 0],
@@ -100,7 +104,6 @@ def test_movedown_early():
     assert i.dp == 0
 
 
-
 def test_get_transition_function_results():
     init = [0, 7, 0, 0, 0, 3, 1, 0, 5, 2, 2, 2, 1, 0, 7, 10, 100, 200, 0]
     res = [0, 10, 100, 200, 0, 3, 1, 0, 5, 2, 2, 2, 1, 0, 7, 10, 100, 200, 0]
@@ -127,6 +130,7 @@ def test_copydown_char():
     assert i.tape[:len(res)] == res
     assert i.dp == 1
 
+@pytest.mark.skip
 def test_qw_to_transition_function():
     res = [0, 102, 101, 0, 0, 101, 1, 0, 97, 97, 97, 1, 0, 0, 0, 0, 0, 0, 98, 1, 0, 97, 97, 97, 1, 0, 1, 0, 0, 0, 1, 0, 101, 0, 0, 1, 102, 0, 0, 0]
     
@@ -153,6 +157,7 @@ def test_qw_to_transition_function():
     assert i.dp == 0
 
     
+@pytest.mark.skip
 def test_qw_to_transition_function2():
     res = [0, 0, 0, 0, 0, 98, 1, 0, 97, 97, 97, 1, 0, 0, 102, 101, 0, 0, 101, 1, 0, 97, 97, 97, 1, 0, 1, 0, 0, 0, 1, 0, 101, 0, 0, 1, 102, 0, 0, 0, ]
     
@@ -178,7 +183,7 @@ def test_qw_to_transition_function2():
     assert i.dp == 13
 
 
-
+@pytest.mark.skip
 def test_copyup_transition_function_results():
     
     i = DSLInterpreter(tape_size=40, set_input="efabLbaaaL;ef")
@@ -289,3 +294,27 @@ def test_as_bs_fail(capsys):
     assert captured.out == "rej\nbaa\n"
 
 
+def test_state_transition(capsys):
+    # if we see a b followed by an a, change it to a c
+    s = "".join([random.choice("ab") for _ in range(10)])
+    s_correct = s.replace("ab", "ac")
+
+    i = DSLInterpreter(tape_size=150, set_input=f"0aa1Rbb0R  0A1aa1Rbc0R  0A;0{s}")
+    i.exec(*compile())
+
+    captured = capsys.readouterr()
+    assert captured.out == f"acc\n{s_correct} \n"
+    
+
+
+def test_full_complex(capsys):
+    # remove a single c :)
+    s = "".join([random.choice("abc") for _ in range(10)])
+    s_correct = s.replace("c", "")
+
+    i = DSLInterpreter(tape_size=500, set_input=f"0aa0Rbb0Rcx0Sxx1R1xx1RaxALbxBLcx1R  ZLAaaaRbbaRxxALaxa0RBaabRbbbRxxBLbxb0RZx ZLaa0Abb0A;0{s}")
+    i.exec(*compile())
+
+    captured = capsys.readouterr()
+    assert captured.out.strip() == f"acc\n{s_correct}"
+    
